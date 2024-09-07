@@ -84,7 +84,7 @@ npm run dev
 
 ```
 
-## _Esto iniciará el servidor de desarrollo en http://localhost:3000, donde podrás ver y probar la aplicación. Los cambios en el código se reflejarán automáticamente sin necesidad de reiniciar el servidor (hot-reload)._
+### _Esto iniciará el servidor de desarrollo en http://localhost:3000, donde podrás ver y probar la aplicación. Los cambios en el código se reflejarán automáticamente sin necesidad de reiniciar el servidor (hot-reload)._
 
 Compilación para producción
 Para generar una versión optimizada de la aplicación para su despliegue en producción, ejecuta:
