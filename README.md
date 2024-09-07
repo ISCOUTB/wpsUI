@@ -1,6 +1,6 @@
-# WSPUI
+# WPSUI
 
-**WSPUI** es una interfaz de usuario construida utilizando **Next.js**, **TailwindCSS**, y varias bibliotecas adicionales como **Radix UI** y **Nivo** para la visualización de datos. Este proyecto está diseñado para ofrecer una experiencia moderna y eficiente para la construcción de aplicaciones web.
+**WPSUI** es una interfaz de usuario construida utilizando **Next.js**, **TailwindCSS**, y varias bibliotecas adicionales como **Radix UI** y **Nivo** para la visualización de datos. Este proyecto está diseñado para ofrecer una experiencia moderna y eficiente para la construcción de aplicaciones web.
 
 ## Tabla de contenidos
 
