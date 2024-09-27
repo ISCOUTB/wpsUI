@@ -1,14 +1,7 @@
 {
-  "name": "template-electron-by-ferpereira36",
+  "name": "wellprodsim",
   "version": "0.1.0",
-  "author": {
-    "name": "Fernando Pereira",
-    "url": "https://github.com/ferpereira36"
-  },
-  "description": "Projeto template para criação de aplicações desktop.",
-  "bugs": {
-    "url": "https://linkedin.com/in/ferpereira36/"
-  },
+  "description": "Social Simulator used to estimate productivity and well-being of peasant families. It is event oriented, high concurrency, heterogeneous time management and emotional reasoning BDI.",
   "keywords": [
     "electron",
     "next",
@@ -32,6 +25,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "": "file:",
     "@electron/remote": "^2.1.2",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-popover": "^1.1.1",
@@ -64,8 +58,8 @@
     "typescript": "^5"
   },
   "build": {
-    "appId": "com.example.templateapplication",
-    "productName": "Template with Electron + NextJS + TailwindCSS + Typescript",
+    "appId": "WellProdSim",
+    "productName": "WellProdSim",
     "files": [
       "out/**/*",
       "main/out/**/*",
