@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌾 Simulador Social de Productividad y Bienestar para Familias Campesinas (WellProdSim) 🌾
 
-## Getting Started
+Este proyecto es un **simulador social** diseñado para modelar y estimar la productividad y el bienestar de familias campesinas 👩‍🌾👨‍🌾. Utiliza un enfoque orientado a eventos, con alta concurrencia, gestión heterogénea del tiempo, y un sistema de razonamiento emocional **BDI** 🧠💡.
 
-First, run the development server:
+## 🚀 Características Principales
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- 🎯 **Simulación orientada a eventos**: Modela interacciones sociales y la dinámica productiva de las familias campesinas.
+- ⚙️ **Alta concurrencia**: Permite que múltiples agentes interactúen en paralelo 👫👬.
+- ⏳ **Gestión heterogénea del tiempo**: Cada agente maneja su propio ritmo temporal, lo que añade realismo ⌛.
+- 🤖 **Razonamiento emocional BDI**: Los agentes toman decisiones basadas en creencias, deseos e intenciones, influenciadas por sus emociones ❤️🧠.
+- 🖥️ **Interfaz visual**: Basada en **Electro** ⚡ y **Next.js** 🌐, con una interfaz intuitiva y reactiva.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🏗️ Estructura del Proyecto
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Frontend**:
+   - ⚡ **Electro**: Para la funcionalidad de la interfaz de escritorio.
+   - 🌐 **Next.js**: Para la visualización web, utilizando SSR (renderizado en servidor) y generación de sitios estáticos.
+2. **Backend**:
+   - ☕ **Java**: El núcleo del simulador, utilizando un modelo de concurrencia orientado a eventos para gestionar interacciones entre los agentes.
+   - 🧠 **Motor BDI**: Sistema de razonamiento basado en creencias, deseos e intenciones, lo que da lugar a decisiones emocionalmente inteligentes.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Instalación y Ejecución
 
-## Learn More
+### 📝 Instrucciones
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Clona el repositorio:
+   ```bash
+   git clone https://github.com/usuario/proyecto-simulador-social.git
+   ```
