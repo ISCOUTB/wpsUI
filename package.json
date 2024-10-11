@@ -50,7 +50,8 @@
     "recharts": "^2.12.7",
     "tailwind-merge": "^2.5.3",
     "tailwindcss": "^3.4.13",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "wellprodsim": "file:"
   },
   "devDependencies": {
     "@rocketseat/eslint-config": "^2.2.2",
@@ -76,7 +77,7 @@
       "main/out/**/*",
       ".next/**/*",
       "main/main.js",
-      "main/preload.js"
+      "main/preload/preload.mjs"
     ],
     "directories": {
       "buildResources": "assets"
