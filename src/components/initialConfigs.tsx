@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import "../app/styles/global.css";
@@ -14,6 +14,16 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import path from "path";
+
+declare global {
+  interface Window {
+    electronAPI: {
+      executeExe: (exePath: string) => Promise<string>;
+      getAppPath: () => Promise<string>;
+    };
+  }
+}
 
 const LeafAnimation = () => (
   <motion.div
@@ -60,7 +70,57 @@ export default function WPSInitialConfig() {
     emotions: true,
   });
 
+  const [configupdated, setConfigUpdated] = useState({
+    mode: "single",
+    env: "local",
+    agents: 2,
+    money: 750000,
+    land: 2,
+    personality: 0.0,
+    tools: 20,
+    seeds: 50,
+    water: 0,
+    irrigation: 0,
+    emotions: 0,
+  });
+
   const router = useRouter();
+
+
+  const updateConfig = () => {
+
+    if (config.personality == "Neutral") {
+      configupdated.personality = 0.0;
+    }
+
+    if (config.emotions == true) {
+      configupdated.emotions = 1;
+    }
+
+  }
+
+  
+  function buildArgs(x: Record<string, any>): string[] {
+    return Object.entries(x).map(([key, value]) => `-${key} ${value}`);
+  }
+
+  const handleExecuteExe = async () => {
+    const args = buildArgs(configupdated);
+    const Path = await window.electronAPI.getAppPath();
+
+    const exePath = path.join(Path, "/src/wps/wpsSimulator-1.0.exe");
+
+    // Log the command to be executed
+    console.log(`Executing command: "${exePath}" ${args.join(' ')}`);
+    try {
+      const result = await window.electronAPI.executeExe(`"${exePath}" ${args.join(' ')}`);
+      console.log("Execution result:", result);
+    } catch (error) {
+      console.error("Error executing command:", error);
+    }
+    
+  };
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
@@ -286,7 +346,11 @@ export default function WPSInitialConfig() {
           </CardContent>
           <CardFooter className="bg-white/30 p-4">
             <Button
-              onClick={handleStartSimulation}
+              onClick={() => {
+                handleStartSimulation();
+                updateConfig();
+                handleExecuteExe();
+              }}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200"
             >
               Iniciar Simulación

@@ -16,7 +16,8 @@
   "main": "main/main.js",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"magenta,cyan\" --kill-others \"next dev\" \"electron .\"",
+    "clear-cache": "rimraf .next",
+    "dev": "npm run clear-cache && concurrently -n \"NEXT,ELECTRON\" -c \"magenta,cyan\" --kill-others \"next dev\" \"electron .\"",
     "build": "next build && electron-builder",
     "start": "next start",
     "electron": "electron .",
