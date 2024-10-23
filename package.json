@@ -16,8 +16,7 @@
   "main": "main/main.js",
   "type": "module",
   "scripts": {
-    "clear-cache": "rimraf .next",
-    "dev": "npm run clear-cache && concurrently -n \"NEXT,ELECTRON\" -c \"magenta,cyan\" --kill-others \"next dev\" \"electron .\"",
+    "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"magenta,cyan\" --kill-others \"next dev\" \"electron .\"",
     "build": "next build && electron-builder",
     "start": "next start",
     "electron": "electron .",
@@ -41,11 +40,11 @@
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
-    "electron": "^32.1.2",
     "electron-is-dev": "^3.0.1",
     "electron-serve": "^2.0.0",
     "framer-motion": "^11.11.7",
     "lucide-react": "^0.447.0",
+    "next": "14.2.15",
     "postcss": "^8.4.47",
     "react": "^18.3.1",
     "recharts": "^2.12.7",
@@ -78,7 +77,11 @@
       "main/out/**/*",
       ".next/**/*",
       "main/main.js",
-      "main/preload/preload.mjs"
+      "main/preload/preload.mjs",
+      "src/wps/**/*"
+    ],
+    "asarUnpack": [
+      "src/wps/**/*"
     ],
     "directories": {
       "buildResources": "assets"

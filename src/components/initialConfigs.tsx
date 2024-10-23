@@ -12,6 +12,7 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
+import { app } from 'electron';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import path from "path";
@@ -19,7 +20,7 @@ import path from "path";
 declare global {
   interface Window {
     electronAPI: {
-      executeExe: (exePath: string) => Promise<string>;
+      executeExe: (File: string, args: string[]) => Promise<string>;
       getAppPath: () => Promise<string>;
     };
   }
@@ -100,8 +101,8 @@ export default function WPSInitialConfig() {
   }
 
   
-  function buildArgs(x: Record<string, any>): string[] {
-    return Object.entries(x).map(([key, value]) => `-${key} ${value}`);
+  function buildArgs(x: Record<string, any>): string[] { 
+    return Object.entries(x).flatMap(([key, value]) => [`-${key}`, String(value)]);
   }
 
   const handleExecuteExe = async () => {
@@ -110,10 +111,12 @@ export default function WPSInitialConfig() {
 
     const exePath = path.join(Path, "/src/wps/wpsSimulator-1.0.exe");
 
+    console.log("Path:", exePath);
+
     // Log the command to be executed
-    console.log(`Executing command: "${exePath}" ${args.join(' ')}`);
+    console.log(args);
     try {
-      const result = await window.electronAPI.executeExe(`"${exePath}" ${args.join(' ')}`);
+      const result = await window.electronAPI.executeExe(exePath, args);
       console.log("Execution result:", result);
     } catch (error) {
       console.error("Error executing command:", error);
