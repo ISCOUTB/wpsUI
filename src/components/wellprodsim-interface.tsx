@@ -29,7 +29,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import L from "leaflet";
+import dynamic from 'next/dynamic';
 import "leaflet/dist/leaflet.css";
 import { LatLngTuple } from "leaflet";
 
@@ -64,54 +64,66 @@ const WellprodsimInterface = () => {
   const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (mapRef.current && !mapRef.current.dataset.mapInitialized) {
-      const map = L.map(mapRef.current).setView([9.9558349, -75.3062724], 14);
-      mapRef.current.dataset.mapInitialized = "true";
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: 'Map data © OpenStreetMap contributors',
-      }).addTo(map);
-
-      const loadData = async () => {
-        try {
-          let response = await fetch("/mediumworld.json");
-          let data = await response.json();
-          data.forEach(function (fincaData: { kind: string; coordinates: number[][]; name: string }) {
-            let fillColor;
-            switch (fincaData.kind) {
-              case "road":
-                fillColor = "SlateGrey";
-                break;
-              case "water":
-                fillColor = "DarkBlue";
-                break;
-              case "forest":
-                fillColor = "DarkGreen";
-                break;
-              default:
-                fillColor = "Wheat";
-            }
-
-            let polygonOptions = {
-              weight: 0.5,
-              fillColor: fillColor,
-              fillOpacity: 0.5,
-            };
-
-            // Convert coordinates to LatLngTuple[]
-            let latLngs: LatLngTuple[] = fincaData.coordinates.map(coord => [coord[0], coord[1]] as LatLngTuple);
-
-            let polygon = L.polygon(latLngs, polygonOptions)
-              .addTo(map)
-              .bindTooltip(fincaData.name);
-          });
-        } catch (err) {
-          console.error("Error loading data", err);
+    let map: any;
+    if (typeof window !== 'undefined' && mapRef.current && !mapRef.current.dataset.mapInitialized) {
+      import('leaflet').then(L => {
+        if (mapRef.current) {
+          map = L.map(mapRef.current).setView([9.9558349, -75.3062724], 14);
         }
-      }
+        if (mapRef.current) {
+          mapRef.current.dataset.mapInitialized = "true";
+        }
 
-      loadData();
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: 'Map data © OpenStreetMap contributors',
+        }).addTo(map);
+
+        const loadData = async () => {
+          try {
+            let response = await fetch("/mediumworld.json");
+            let data = await response.json();
+            data.forEach(function (fincaData: { kind: string; coordinates: number[][]; name: string }) {
+              let fillColor;
+              switch (fincaData.kind) {
+                case "road":
+                  fillColor = "SlateGrey";
+                  break;
+                case "water":
+                  fillColor = "DarkBlue";
+                  break;
+                case "forest":
+                  fillColor = "DarkGreen";
+                  break;
+                default:
+                  fillColor = "Wheat";
+              }
+
+              let polygonOptions = {
+                weight: 0.5,
+                fillColor: fillColor,
+                fillOpacity: 0.5,
+              };
+
+              // Convert coordinates to LatLngTuple[]
+              let latLngs: LatLngTuple[] = fincaData.coordinates.map(coord => [coord[0], coord[1]] as LatLngTuple);
+
+              let polygon = L.polygon(latLngs, polygonOptions)
+                .addTo(map)
+                .bindTooltip(fincaData.name);
+            });
+          } catch (err) {
+            console.error("Error loading data", err);
+          }
+        }
+
+        loadData();
+      });
     }
+    return () => {
+      if (map) {
+        map.remove();
+      }
+    };
   }, []);
 
   return (
