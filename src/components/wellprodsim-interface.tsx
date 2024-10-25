@@ -62,21 +62,22 @@ const WellprodsimInterface = () => {
   };
 
   const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
 
   useEffect(() => {
-    let map: any;
-    if (typeof window !== 'undefined' && mapRef.current && !mapRef.current.dataset.mapInitialized) {
+    if (typeof window !== 'undefined' && mapRef.current) {
       import('leaflet').then(L => {
-        if (mapRef.current) {
-          map = L.map(mapRef.current).setView([9.9558349, -75.3062724], 14);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
         }
+
         if (mapRef.current) {
-          mapRef.current.dataset.mapInitialized = "true";
+          mapInstanceRef.current = L.map(mapRef.current).setView([9.9558349, -75.3062724], 14);
         }
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: 'Map data © OpenStreetMap contributors',
-        }).addTo(map);
+        }).addTo(mapInstanceRef.current);
 
         const loadData = async () => {
           try {
@@ -104,11 +105,10 @@ const WellprodsimInterface = () => {
                 fillOpacity: 0.5,
               };
 
-              // Convert coordinates to LatLngTuple[]
               let latLngs: LatLngTuple[] = fincaData.coordinates.map(coord => [coord[0], coord[1]] as LatLngTuple);
 
               let polygon = L.polygon(latLngs, polygonOptions)
-                .addTo(map)
+                .addTo(mapInstanceRef.current)
                 .bindTooltip(fincaData.name);
             });
           } catch (err) {
@@ -120,8 +120,8 @@ const WellprodsimInterface = () => {
       });
     }
     return () => {
-      if (map) {
-        map.remove();
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
       }
     };
   }, []);
