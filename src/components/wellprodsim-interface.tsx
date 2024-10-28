@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Play,
   Pause,
@@ -29,6 +29,9 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import dynamic from 'next/dynamic';
+import "leaflet/dist/leaflet.css";
+import { LatLngTuple } from "leaflet";
 
 const mockData = [
   { name: "Día 1", productividad: 4000, bienestar: 2400 },
@@ -57,6 +60,72 @@ const WellprodsimInterface = () => {
   const handleConfigRedirect = () => {
     router.push("/pages/confi");
   };
+
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && mapRef.current) {
+      import('leaflet').then(L => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+        }
+
+        if (mapRef.current) {
+          mapInstanceRef.current = L.map(mapRef.current).setView([9.9558349, -75.3062724], 14);
+        }
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: 'Map data © OpenStreetMap contributors',
+        }).addTo(mapInstanceRef.current);
+
+        const loadData = async () => {
+          try {
+            let response = await fetch("/mediumworld.json");
+            let data = await response.json();
+            data.forEach(function (fincaData: { kind: string; coordinates: number[][]; name: string }) {
+              let fillColor;
+              switch (fincaData.kind) {
+                case "road":
+                  fillColor = "SlateGrey";
+                  break;
+                case "water":
+                  fillColor = "DarkBlue";
+                  break;
+                case "forest":
+                  fillColor = "DarkGreen";
+                  break;
+                default:
+                  fillColor = "Wheat";
+              }
+
+              let polygonOptions = {
+                weight: 0.5,
+                fillColor: fillColor,
+                fillOpacity: 0.5,
+              };
+
+              let latLngs: LatLngTuple[] = fincaData.coordinates.map(coord => [coord[0], coord[1]] as LatLngTuple);
+
+              let polygon = L.polygon(latLngs, polygonOptions)
+                .addTo(mapInstanceRef.current)
+                .bindTooltip(fincaData.name);
+            });
+          } catch (err) {
+            console.error("Error loading data", err);
+          }
+        }
+
+        loadData();
+      });
+    }
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+      }
+    };
+  }, []);
+
   return (
     <div className="flex h-screen bg-green-50 text-gray-800 p-4">
       {/* Left Sidebar */}
@@ -143,66 +212,7 @@ const WellprodsimInterface = () => {
 
         {/* Simulation area */}
         <div className="flex-1 bg-green-200 rounded-lg p-4 relative overflow-hidden">
-          {/* Farm representation */}
-          <div className="absolute inset-4 bg-green-300 rounded-lg"></div>
-
-          {/* Houses */}
-          <div className="absolute top-8 left-8 w-32 h-24 bg-yellow-200 rounded-lg"></div>
-          <div className="absolute top-8 right-8 w-32 h-24 bg-yellow-200 rounded-lg"></div>
-
-          {/* Fields */}
-          <div className="absolute top-40 left-8 right-8 bottom-8 bg-green-400 rounded-lg"></div>
-
-          {/* Agents */}
-          <div
-            className="absolute top-12 left-48 w-8 h-8 bg-blue-500 rounded-full cursor-pointer flex items-center justify-center"
-            onClick={() => setSelectedAgent(1)}
-          >
-            <Users className="text-white w-5 h-5" />
-          </div>
-          <div
-            className="absolute top-48 left-16 w-8 h-8 bg-red-500 rounded-full cursor-pointer flex items-center justify-center"
-            onClick={() => setSelectedAgent(2)}
-          >
-            <Users className="text-white w-5 h-5" />
-          </div>
-          <div
-            className="absolute top-80 right-16 w-8 h-8 bg-purple-500 rounded-full cursor-pointer flex items-center justify-center"
-            onClick={() => setSelectedAgent(3)}
-          >
-            <Users className="text-white w-5 h-5" />
-          </div>
-
-          {/* Layer overlays */}
-          {activeLayers.productividad && (
-            <div className="absolute inset-4 bg-green-500 opacity-30 rounded-lg"></div>
-          )}
-          {activeLayers.bienestar && (
-            <div className="absolute inset-4 bg-blue-500 opacity-30 rounded-lg"></div>
-          )}
-          {activeLayers.clima && (
-            <div className="absolute inset-4 bg-yellow-500 opacity-30 rounded-lg"></div>
-          )}
-          {activeLayers.recursos && (
-            <div className="absolute inset-4 bg-brown-500 opacity-30 rounded-lg"></div>
-          )}
-
-          {/* Agent info popup */}
-          {selectedAgent && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-4 rounded-lg shadow-lg">
-              <h3 className="font-semibold mb-2">Agente {selectedAgent}</h3>
-              <p>Creencia: Optimista</p>
-              <p>Deseo: Aumentar producción</p>
-              <p>Intención: Plantar nuevos cultivos</p>
-              <p>Estado emocional: Entusiasmado</p>
-              <button
-                className="mt-2 p-1 bg-gray-200 rounded-md"
-                onClick={() => setSelectedAgent(null)}
-              >
-                Cerrar
-              </button>
-            </div>
-          )}
+          <div id="map" ref={mapRef} className="w-full h-full"></div>
         </div>
 
         {/* Time and concurrency panel */}
