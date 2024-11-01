@@ -39,7 +39,7 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 import { LatLngTuple } from "leaflet";
-
+import CardInfo from "./farmInfoComponents";
 import router from "next/router";
 
 export default function MapaSim() {
@@ -305,65 +305,12 @@ export default function MapaSim() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
-              <CardTitle>Recent Events</CardTitle>
-              <CardDescription>
-                Latest happenings in the community
-              </CardDescription>
-            </CardHeader>
+            <CardTitle className="p-4 text-2xl font-bold justify-center text-center bg-gradient-to-br from-green-600 to-green-700">
+              {" "}
+              Agentes Campesinos{" "}
+            </CardTitle>
             <CardContent>
-              <ScrollArea className="h-[400px]">
-                <div className="space-y-4">
-                  {[
-                    {
-                      name: "Harvest Festival",
-                      description: "Annual celebration of crops",
-                      icon: "🌾",
-                      highlighted: true,
-                    },
-                    {
-                      name: "Market Day",
-                      description: "Weekly trading event",
-                      icon: "🛒",
-                    },
-                    {
-                      name: "Royal Visit",
-                      description: "Inspection by the local lord",
-                      icon: "👑",
-                    },
-                  ].map((event, index) => (
-                    <Dialog key={index}>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                        >
-                          <div
-                            className={`flex items-center space-x-4 ${event.highlighted ? "text-yellow-400" : ""}`}
-                          >
-                            <span className="text-2xl">{event.icon}</span>
-                            <div>
-                              <p className="text-sm font-medium">
-                                {event.name}
-                              </p>
-                              <p className="text-sm text-gray-400">
-                                {event.description}
-                              </p>
-                            </div>
-                          </div>
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>{event.name}</DialogTitle>
-                        </DialogHeader>
-                        <p>{event.description}</p>
-                        <p>Additional event details would go here...</p>
-                      </DialogContent>
-                    </Dialog>
-                  ))}
-                </div>
-              </ScrollArea>
+              <CardInfo />
             </CardContent>
           </Card>
         </div>
@@ -428,6 +375,7 @@ export default function MapaSim() {
                   Average emotional state of families in the community
                 </CardDescription>
               </CardHeader>
+
               <CardContent>
                 <div className="h-[300px] bg-gray-700 rounded-md flex items-center justify-center">
                   <PieChart size={100} className="text-gray-400" />
