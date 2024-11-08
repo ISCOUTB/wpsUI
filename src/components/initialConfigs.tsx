@@ -12,7 +12,7 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
-import { app } from 'electron';
+import { app } from "electron";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import path from "path";
@@ -63,20 +63,6 @@ export default function WPSInitialConfig() {
     agents: 2,
     money: 750000,
     land: 2,
-    personality: "Neutral",
-    tools: 20,
-    seeds: 50,
-    water: 0,
-    irrigation: 0,
-    emotions: true,
-  });
-
-  const [configupdated, setConfigUpdated] = useState({
-    mode: "single",
-    env: "local",
-    agents: 2,
-    money: 750000,
-    land: 2,
     personality: 0.0,
     tools: 20,
     seeds: 50,
@@ -86,27 +72,13 @@ export default function WPSInitialConfig() {
   });
 
   const router = useRouter();
-
-
-  const updateConfig = () => {
-
-    if (config.personality == "Neutral") {
-      configupdated.personality = 0.0;
-    }
-
-    if (config.emotions == true) {
-      configupdated.emotions = 1;
-    }
-
-  }
-
   
   function buildArgs(x: Record<string, any>): string[] { 
     return Object.entries(x).flatMap(([key, value]) => [`-${key}`, String(value)]);
   }
 
   const handleExecuteExe = async () => {
-    const args = buildArgs(configupdated);
+    const args = buildArgs(config);
     const Path = await window.electronAPI.getAppPath();
 
     const exePath = path.join(Path, "/src/wps/wpsSimulator-1.0.exe");
@@ -121,9 +93,7 @@ export default function WPSInitialConfig() {
     } catch (error) {
       console.error("Error executing command:", error);
     }
-    
   };
-
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
@@ -183,7 +153,6 @@ export default function WPSInitialConfig() {
                   className="bg-white/70 border-green-300 text-green-800"
                 >
                   <option value="single">Individual</option>
-                  <option value="multi">Múltiple</option>
                 </select>
               </div>
               <div>
@@ -201,7 +170,6 @@ export default function WPSInitialConfig() {
                   className="bg-white/70 border-green-300 text-green-800"
                 >
                   <option value="local">Local</option>
-                  <option value="cloud">Nube</option>
                 </select>
               </div>
               <div>
@@ -259,19 +227,14 @@ export default function WPSInitialConfig() {
                 >
                   Personalidad
                 </Label>
-                <select
+                <Input
                   id="personality"
                   name="personality"
+                  type="number"
                   value={config.personality}
-                  onChange={handleSelectChange}
+                  onChange={handleInputChange}
                   className="bg-white/70 border-green-300 text-green-800"
-                >
-                  <option value="Neutral">Neutral</option>
-                  <option value="Happy">Feliz</option>
-                  <option value="Sad">Triste</option>
-                  <option value="Angry">Enojado</option>
-                  <option value="Excited">Emocionado</option>
-                </select>
+                />
               </div>
               <div>
                 <Label
@@ -351,7 +314,6 @@ export default function WPSInitialConfig() {
             <Button
               onClick={() => {
                 handleStartSimulation();
-                updateConfig();
                 handleExecuteExe();
               }}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200"

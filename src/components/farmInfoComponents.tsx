@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Heart, Coins, Calendar, Sprout, Users } from "lucide-react";
 import { motion } from "framer-motion";
@@ -15,35 +15,92 @@ interface FarmInfo {
   farmId: string;
 }
 
-const initialData: FarmInfo[] = [
-  {
-    id: "MAS_500PeasantFamily1",
-    count: 100,
-    life: 100,
-    amount: 1303.57,
-    date: "23/04/2022",
-    farmId: "Farm_101_small",
-  },
-  {
-    id: "MAS_501PeasantFamily2",
-    count: 150,
-    life: 100,
-    amount: 1500.0,
-    date: "24/04/2022",
-    farmId: "Farm_102_medium",
-  },
-  {
-    id: "MAS_502PeasantFamily3",
-    count: 80,
-    life: 80,
-    amount: 1000.25,
-    date: "25/04/2022",
-    farmId: "Farm_103_large",
-  },
-];
+const initialData: FarmInfo[] = [];
 
 export default function CardInfo() {
-  const [farmData] = useState<FarmInfo[]>(initialData);
+  const socketRef = useRef<WebSocket | null>(null);
+  const [farmData, setFarmData] = useState<FarmInfo[]>(initialData);
+
+  const connectWebSocket = () => {
+    const url = "ws://localhost:8000/wpsViewer";
+    socketRef.current = new WebSocket(url);
+
+    socketRef.current.onerror = function (event) {
+      console.error("Error en la conexión a la dirección: " + url);
+      setTimeout(connectWebSocket, 2000);
+    };
+
+    socketRef.current.onopen = function (event) {
+      function sendMessage() {
+        try {
+          socketRef.current?.send("setup");
+        } catch (error) {
+          console.error(error);
+          setTimeout(sendMessage, 2000);
+        }
+      }
+      sendMessage();
+    };
+
+    socketRef.current.onmessage = function (event) {
+      let prefix = event.data.substring(0, 2);
+      let data = event.data.substring(2);
+      switch (prefix) {
+        case "j=":
+          try {
+            let jsonData = JSON.parse(data);
+            const { name, state } = jsonData;
+            const parsedState = JSON.parse(state);
+
+            setFarmData((prevFarmData) =>
+              prevFarmData.map((farm) =>
+                farm.id === name
+                  ? {
+                      ...farm,
+                      count: parsedState.tools,
+                      life: parsedState.health,
+                      amount: parsedState.money,
+                      date: parsedState.internalCurrentDate,
+                      farmId: parsedState.peasantFamilyLandAlias,
+                    }
+                  : farm
+              )
+            );
+          } catch (error) {
+            console.error(error);
+          }
+          break;
+        case "q=":
+          console.log(data);
+          let number = parseInt(data, 10);
+          setFarmData(() => {
+            const newFarmData = [];
+            for (let i = 1; i <= number; i++) {
+              newFarmData.push({
+                id: `MAS_500PeasantFamily${i}`,
+                count: 0,
+                life: 0,
+                amount: 0,
+                date: "",
+                farmId: "",
+              });
+            }
+            return newFarmData;
+          });
+          break;
+      }
+    };
+  };
+
+  useEffect(() => {
+    if (window.WebSocket) {
+      connectWebSocket();
+    }
+
+    return () => {
+      socketRef.current?.close();
+    };
+  }, []);
 
   return (
     <ScrollArea className="h-[400px] w-full">
