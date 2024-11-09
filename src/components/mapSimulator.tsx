@@ -1,30 +1,30 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState, useEffect, useRef } from "react"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+} from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   BarChart,
   Activity,
@@ -34,109 +34,136 @@ import {
   Settings,
   Home,
   PieChart,
-} from "lucide-react";
-import Image from "next/image";
-import dynamic from "next/dynamic";
-import "leaflet/dist/leaflet.css";
-import { LatLngTuple } from "leaflet";
-import CardInfo from "./farmInfoComponents";
-import router from "next/router";
+  Play,
+  Pause,
+  Square,
+} from "lucide-react"
+import Image from "next/image"
+import dynamic from "next/dynamic"
+import "leaflet/dist/leaflet.css"
+import { LatLngTuple } from "leaflet"
+import CardInfo from "./farmInfoComponents"
+import router from "next/router"
 
 export default function MapaSim() {
   const handleConfigRedirect = () => {
-    router.push("/pages/confi");
-  };
+    router.push("/pages/confi")
+  }
 
-  const [simulationRunning, setSimulationRunning] = useState(false);
-  const [simulationProgress, setSimulationProgress] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
+  const [simulationRunning, setSimulationRunning] = useState(false)
+  const [simulationPaused, setSimulationPaused] = useState(false)
+  const [simulationProgress, setSimulationProgress] = useState(0)
+  //const [isHovered, setIsHovered] = useState(false) //Removed isHovered state
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<any>(null)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const startSimulation = () => {
-    setSimulationRunning(true);
-    const interval = setInterval(() => {
+    if (simulationPaused) {
+      setSimulationPaused(false)
+    } else {
+      setSimulationProgress(0)
+    }
+    setSimulationRunning(true)
+    intervalRef.current = setInterval(() => {
       setSimulationProgress((prev) => {
         if (prev >= 100) {
-          clearInterval(interval);
-          setSimulationRunning(false);
-          return 100;
+          clearInterval(intervalRef.current!)
+          setSimulationRunning(false)
+          return 100
         }
-        return prev + 10;
-      });
-    }, 1000);
-  };
+        return prev + 1
+      })
+    }, 100)
+  }
+
+  const pauseSimulation = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+    }
+    setSimulationPaused(true)
+    setSimulationRunning(false)
+  }
+
+  const stopSimulation = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+    }
+    setSimulationRunning(false)
+    setSimulationPaused(false)
+    setSimulationProgress(0)
+  }
 
   useEffect(() => {
     if (typeof window !== "undefined" && mapRef.current) {
       import("leaflet").then((L) => {
         if (mapInstanceRef.current) {
-          mapInstanceRef.current.remove();
+          mapInstanceRef.current.remove()
         }
 
         if (mapRef.current) {
           mapInstanceRef.current = L.map(mapRef.current).setView(
             [9.9558349, -75.3062724],
             14
-          );
+          )
         }
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: "Map data © OpenStreetMap contributors",
-        }).addTo(mapInstanceRef.current);
+        }).addTo(mapInstanceRef.current)
 
         const loadData = async () => {
           try {
-            let response = await fetch("/mediumworld.json");
-            let data = await response.json();
+            let response = await fetch("/mediumworld.json")
+            let data = await response.json()
             data.forEach(function (fincaData: {
-              kind: string;
-              coordinates: number[][];
-              name: string;
+              kind: string
+              coordinates: number[][]
+              name: string
             }) {
-              let fillColor;
+              let fillColor
               switch (fincaData.kind) {
                 case "road":
-                  fillColor = "SlateGrey";
-                  break;
+                  fillColor = "SlateGrey"
+                  break
                 case "water":
-                  fillColor = "DarkBlue";
-                  break;
+                  fillColor = "DarkBlue"
+                  break
                 case "forest":
-                  fillColor = "DarkGreen";
-                  break;
+                  fillColor = "DarkGreen"
+                  break
                 default:
-                  fillColor = "Wheat";
+                  fillColor = "Wheat"
               }
 
               let polygonOptions = {
                 weight: 0.5,
                 fillColor: fillColor,
                 fillOpacity: 0.5,
-              };
+              }
 
               let latLngs: LatLngTuple[] = fincaData.coordinates.map(
                 (coord) => [coord[0], coord[1]] as LatLngTuple
-              );
+              )
 
               let polygon = L.polygon(latLngs, polygonOptions)
                 .addTo(mapInstanceRef.current)
-                .bindTooltip(fincaData.name);
-            });
+                .bindTooltip(fincaData.name)
+            })
           } catch (err) {
-            console.error("Error loading data", err);
+            console.error("Error loading data", err)
           }
-        };
+        }
 
-        loadData();
-      });
+        loadData()
+      })
     }
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        mapInstanceRef.current.remove()
       }
-    };
-  }, []);
+    }
+  }, [])
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
@@ -146,36 +173,45 @@ export default function MapaSim() {
           <h1 className="text-2xl font-bold mb-4 text-center">
             Social Simulator
           </h1>
-          <Button
-            onClick={startSimulation}
-            disabled={simulationRunning}
-            className="w-full mb-4 transition-all duration-300"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            style={{
-              background: isHovered
-                ? "linear-gradient(45deg, #22c55e, #16a34a)"
-                : "linear-gradient(45deg, #22c55e, #22c55e)",
-            }}
-          >
-            {simulationRunning ? "Simulation Running" : "Start Simulation"}
-          </Button>
+          <div className="flex flex-col space-y-2 mb-4">
+            <Button
+              onClick={startSimulation}
+              disabled={simulationRunning && !simulationPaused}
+              className="w-full transition-all duration-300 bg-green-600 hover:bg-green-700"
+            >
+              <Play size={20} className="mr-2" />
+              {simulationRunning && !simulationPaused
+                ? "Simulation Running"
+                : simulationPaused
+                ? "Resume Simulation"
+                : "Start Simulation"}
+            </Button>
+            <Button
+              onClick={pauseSimulation}
+              disabled={!simulationRunning || simulationPaused}
+              className="w-full transition-all duration-300 bg-yellow-600 hover:bg-yellow-700"
+            >
+              <Pause size={20} className="mr-2" />
+              Pause Simulation
+            </Button>
+            <Button
+              onClick={stopSimulation}
+              disabled={!simulationRunning && !simulationPaused && simulationProgress === 0}
+              className="w-full transition-all duration-300 bg-red-600 hover:bg-red-700"
+            >
+              <Square size={20} className="mr-2" />
+              Stop Simulation
+            </Button>
+          </div>
           <Progress value={simulationProgress} className="w-full bg-gray-700" />
         </div>
         <nav className="mt-8">
           <a
-            href="pages/"
+            href="/"
             className="flex items-center py-2 px-4 text-gray-300 hover:bg-gray-700"
           >
             <Home className="mr-2" size={20} />
             Home Page
-          </a>
-          <a
-            href="#"
-            className="flex items-center py-2 px-4 text-gray-300 hover:bg-gray-700"
-          >
-            <Users className="mr-2" size={20} />
-            Families
           </a>
           <a
             href="#"
@@ -195,7 +231,8 @@ export default function MapaSim() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 p-4 md:p-8 overflow-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-auto relative">
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <TooltipProvider>
             <Tooltip>
@@ -375,7 +412,6 @@ export default function MapaSim() {
                   Average emotional state of families in the community
                 </CardDescription>
               </CardHeader>
-
               <CardContent>
                 <div className="h-[300px] bg-gray-700 rounded-md flex items-center justify-center">
                   <PieChart size={100} className="text-gray-400" />
@@ -386,5 +422,5 @@ export default function MapaSim() {
         </Tabs>
       </div>
     </div>
-  );
+  )
 }
