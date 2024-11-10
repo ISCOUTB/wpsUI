@@ -17,8 +17,24 @@ const konkhmerSleokchher = Konkhmer_Sleokchher({
   weight: "400",
 });
 const inter = Inter({ subsets: ["latin"] });
-
 const Particles = () => {
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const updateDimensions = () => {
+        setDimensions({ width: window.innerWidth, height: window.innerHeight });
+      };
+      updateDimensions(); // Actualiza las dimensiones cuando el componente se monta
+      window.addEventListener("resize", updateDimensions); // Escucha el cambio de tamaño de la ventana
+      return () => window.removeEventListener("resize", updateDimensions); // Limpia el evento al desmontar
+    }
+  }, []);
+
+  if (!dimensions.width || !dimensions.height) {
+    // Si las dimensiones aún no están establecidas, retorna null
+    return null;
+  }
   return (
     <div className="absolute inset-0 overflow-hidden">
       {[...Array(50)].map((_, i) => (
