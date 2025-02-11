@@ -1,0 +1,40 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap");
+
+.dropdowns {
+  width: 100%;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 2rem;
+  border-radius: 10px;
+  gap: 1rem;
+}
+
+.dropdownToggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #343747; /* #d4d5d7 Option 2 */
+  font-family: "Archivo";
+  color: #f0f1f5; /* rgb(16, 14, 14)*/
+  border: none;
+  border-radius: 0.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dropdownToggle:hover {
+  background-color: #4a72ae;
+  color: #ffff;
+}
+
+.dropdownContent {
+  padding: 1rem;
+  background-color: rgb(230, 234, 236);
+  border: 1px solid #121419;
+  border-radius: 0 0 0.25rem 0.25rem;
+  color: #12151f;
+}

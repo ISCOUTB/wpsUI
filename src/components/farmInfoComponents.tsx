@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Coins, Calendar, Sprout, Users } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/components/ui/use-toast";
 
 interface FarmInfo {
   id: string;
@@ -15,45 +16,62 @@ interface FarmInfo {
   farmId: string;
 }
 
-const initialData: FarmInfo[] = [];
-
-export default function CardInfo() {
+export default function FarmInfoComponent() {
+  const [farmData, setFarmData] = useState<FarmInfo[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
-  const [farmData, setFarmData] = useState<FarmInfo[]>(initialData);
+  const { toast } = useToast();
 
-  const connectWebSocket = () => {
-    const url = "ws://localhost:8000/wpsViewer";
-    socketRef.current = new WebSocket(url);
-
-    socketRef.current.onerror = function (event) {
-      console.error("Error en la conexión a la dirección: " + url);
-      setTimeout(connectWebSocket, 2000);
-    };
-
-    socketRef.current.onopen = function (event) {
-      function sendMessage() {
-        try {
-          socketRef.current?.send("setup");
-        } catch (error) {
-          console.error(error);
-          setTimeout(sendMessage, 2000);
-        }
+  useEffect(() => {
+    const fetchCSVData = async () => {
+      try {
+        const response = await fetch("/wpsSimulator.csv");
+        const text = await response.text();
+        const rows = text.split("\n").slice(1);
+        const parsedData: FarmInfo[] = rows.map((row) => {
+          const [id, , life, amount, date, farmId] = row.split(",");
+          return {
+            id,
+            count: 1,
+            life: Number.parseFloat(life),
+            amount: Number.parseFloat(amount),
+            date,
+            farmId,
+          };
+        });
+        setFarmData(parsedData);
+      } catch (error) {
+        console.error("Error fetching CSV data:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo cargar los datos iniciales.",
+          variant: "destructive",
+        });
       }
-      sendMessage();
     };
 
-    socketRef.current.onmessage = function (event) {
-      let prefix = event.data.substring(0, 2);
-      let data = event.data.substring(2);
-      switch (prefix) {
-        case "j=":
-          try {
-            let jsonData = JSON.parse(data);
-            const { name, state } = jsonData;
-            const parsedState = JSON.parse(state);
+    fetchCSVData();
+  }, [toast]);
 
-            setFarmData((prevFarmData) =>
-              prevFarmData.map((farm) =>
+  useEffect(() => {
+    const connectWebSocket = () => {
+      const url = "ws://localhost:8000/wpsViewer";
+      socketRef.current = new WebSocket(url);
+
+      socketRef.current.onopen = () => {
+        console.log("WebSocket connected");
+        socketRef.current?.send("setup");
+      };
+
+      socketRef.current.onmessage = (event) => {
+        const prefix = event.data.substring(0, 2);
+        const data = event.data.substring(2);
+
+        if (prefix === "j=") {
+          try {
+            const { name, state } = JSON.parse(data);
+            const parsedState = JSON.parse(state);
+            setFarmData((prevData) =>
+              prevData.map((farm) =>
                 farm.id === name
                   ? {
                       ...farm,
@@ -67,35 +85,28 @@ export default function CardInfo() {
               )
             );
           } catch (error) {
-            console.error(error);
+            console.error("Error parsing WebSocket data:", error);
           }
-          break;
-        case "q=":
-          console.log(data);
-          let number = parseInt(data, 10);
-          setFarmData(() => {
-            const newFarmData = [];
-            for (let i = 1; i <= number; i++) {
-              newFarmData.push({
-                id: `MAS_500PeasantFamily${i}`,
-                count: 0,
-                life: 0,
-                amount: 0,
-                date: "",
-                farmId: "",
-              });
-            }
-            return newFarmData;
-          });
-          break;
-      }
-    };
-  };
+        }
+      };
 
-  useEffect(() => {
-    if (window.WebSocket) {
-      connectWebSocket();
-    }
+      socketRef.current.onerror = () => {
+        console.error("WebSocket error");
+        toast({
+          title: "Error de conexión",
+          description:
+            "No se pudo conectar al servidor de datos en tiempo real.",
+          variant: "destructive",
+        });
+      };
+
+      socketRef.current.onclose = () => {
+        console.log("WebSocket closed. Reconnecting...");
+        setTimeout(connectWebSocket, 5000);
+      };
+    };
+
+    connectWebSocket();
 
     return () => {
       socketRef.current?.close();
@@ -103,33 +114,37 @@ export default function CardInfo() {
   }, []);
 
   return (
-    <ScrollArea className="h-[400px] w-full">
-      <div className="space-y-3 p-3">
+    <ScrollArea className="h-[calc(100vh-4rem)] w-full p-2 sm:p-4">
+      <AnimatePresence>
         {farmData.map((info) => (
           <motion.div
             key={info.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5 }}
+            className="mb-2 sm:mb-4"
           >
-            <Card className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-md overflow-hidden hover:shadow-xl transition-all duration-300">
-              <div className="p-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span className="font-semibold flex-1">{info.id}</span>
-                  <span className="bg-emerald-500/50 px-2 py-0.5 rounded text-sm">
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300">
+              <CardHeader className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white p-3 sm:p-4">
+                <CardTitle className="flex items-center justify-between text-sm sm:text-base">
+                  <span className="flex items-center gap-2">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {info.id}
+                  </span>
+                  <span className="bg-emerald-700/50 px-2 py-1 rounded text-xs sm:text-sm">
                     {info.count} 👥
                   </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+                <div className="flex items-center gap-2 text-red-500 text-sm sm:text-base">
+                  <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="font-semibold">{info.life.toFixed(2)}</span>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Heart className="w-4 h-4" />
-                  <span className="font-mono">{info.life}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Coins className="w-4 h-4" />
-                  <span className="font-mono">
+                <div className="flex items-center gap-2 text-yellow-600 text-sm sm:text-base">
+                  <Coins className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="font-semibold">
                     ${" "}
                     {info.amount.toLocaleString("es-ES", {
                       minimumFractionDigits: 2,
@@ -137,21 +152,19 @@ export default function CardInfo() {
                     })}
                   </span>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  <span>{info.date}</span>
+                <div className="flex items-center gap-2 text-blue-500 text-sm sm:text-base">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>{new Date(info.date).toLocaleDateString()}</span>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Sprout className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-green-600 text-sm sm:text-base">
+                  <Sprout className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>{info.farmId}</span>
                 </div>
-              </div>
+              </CardContent>
             </Card>
           </motion.div>
         ))}
-      </div>
+      </AnimatePresence>
     </ScrollArea>
   );
 }

@@ -1,10 +1,5 @@
-import MapaSim from "@/components/mapSimulator";
+import MapSimulator from "@/components/mapSimulator";
 
-export default function index() {
-  return (
-    <main className="min-h-screen p-0">
-     
-      <MapaSim />
-    </main>
-  );
+export default function Index() {
+  return <MapSimulator />;
 }
