@@ -16,62 +16,45 @@ interface FarmInfo {
   farmId: string;
 }
 
-export default function FarmInfoComponent() {
-  const [farmData, setFarmData] = useState<FarmInfo[]>([]);
-  const socketRef = useRef<WebSocket | null>(null);
-  const { toast } = useToast();
+const initialData: FarmInfo[] = [];
 
-  useEffect(() => {
-    const fetchCSVData = async () => {
-      try {
-        const response = await fetch("/wpsSimulator.csv");
-        const text = await response.text();
-        const rows = text.split("\n").slice(1);
-        const parsedData: FarmInfo[] = rows.map((row) => {
-          const [id, , life, amount, date, farmId] = row.split(",");
-          return {
-            id,
-            count: 1,
-            life: Number.parseFloat(life),
-            amount: Number.parseFloat(amount),
-            date,
-            farmId,
-          };
-        });
-        setFarmData(parsedData);
-      } catch (error) {
-        console.error("Error fetching CSV data:", error);
-        toast({
-          title: "Error",
-          description: "No se pudo cargar los datos iniciales.",
-          variant: "destructive",
-        });
-      }
+export default function FarmInfoComponent() {
+  const socketRef = useRef<WebSocket | null>(null);
+  const [farmData, setFarmData] = useState<FarmInfo[]>(initialData);
+
+  const connectWebSocket = () => {
+    const url = "ws://localhost:8000/wpsViewer";
+    socketRef.current = new WebSocket(url);
+
+    socketRef.current.onerror = function (event) {
+      console.error("Error en la conexión a la dirección: " + url);
+      setTimeout(connectWebSocket, 2000);
     };
 
-    fetchCSVData();
-  }, [toast]);
+    socketRef.current.onopen = function (event) {
+      function sendMessage() {
+        try {
+          socketRef.current?.send("setup");
+        } catch (error) {
+          console.error(error);
+          setTimeout(sendMessage, 2000);
+        }
+      }
+      sendMessage();
+    };
 
-  useEffect(() => {
-    const connectWebSocket = () => {
-      const url = "ws://localhost:8000/wpsViewer";
-      socketRef.current = new WebSocket(url);
-
-      socketRef.current.onopen = () => {
-        console.log("WebSocket connected");
-        socketRef.current?.send("setup");
-      };
-
-      socketRef.current.onmessage = (event) => {
-        const prefix = event.data.substring(0, 2);
-        const data = event.data.substring(2);
-
-        if (prefix === "j=") {
+    socketRef.current.onmessage = function (event) {
+      let prefix = event.data.substring(0, 2);
+      let data = event.data.substring(2);
+      switch (prefix) {
+        case "j=":
           try {
-            const { name, state } = JSON.parse(data);
+            let jsonData = JSON.parse(data);
+            const { name, state } = jsonData;
             const parsedState = JSON.parse(state);
-            setFarmData((prevData) =>
-              prevData.map((farm) =>
+
+            setFarmData((prevFarmData) =>
+              prevFarmData.map((farm) =>
                 farm.id === name
                   ? {
                       ...farm,
@@ -85,28 +68,35 @@ export default function FarmInfoComponent() {
               )
             );
           } catch (error) {
-            console.error("Error parsing WebSocket data:", error);
+            console.error(error);
           }
-        }
-      };
-
-      socketRef.current.onerror = () => {
-        console.error("WebSocket error");
-        toast({
-          title: "Error de conexión",
-          description:
-            "No se pudo conectar al servidor de datos en tiempo real.",
-          variant: "destructive",
-        });
-      };
-
-      socketRef.current.onclose = () => {
-        console.log("WebSocket closed. Reconnecting...");
-        setTimeout(connectWebSocket, 5000);
-      };
+          break;
+        case "q=":
+          console.log(data);
+          let number = parseInt(data, 10);
+          setFarmData(() => {
+            const newFarmData = [];
+            for (let i = 1; i <= number; i++) {
+              newFarmData.push({
+                id: `MAS_500PeasantFamily${i}`,
+                count: 0,
+                life: 0,
+                amount: 0,
+                date: "",
+                farmId: "",
+              });
+            }
+            return newFarmData;
+          });
+          break;
+      }
     };
+  };
 
-    connectWebSocket();
+  useEffect(() => {
+    if (window.WebSocket) {
+      connectWebSocket();
+    }
 
     return () => {
       socketRef.current?.close();

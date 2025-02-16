@@ -80,6 +80,7 @@ export default function SimulatorConfigPage() {
   const handleExecuteExe = async () => {
     const args = buildArgs();
     const Path = await window.electronAPI.getAppPath();
+    console.log("Path:", Path);
 
     const exePath = path.join(Path, "/src/wps/wpsSimulator-1.0.exe");
 
