@@ -52,7 +52,7 @@ export default function FarmInfoComponent() {
             let jsonData = JSON.parse(data);
             const { name, state } = jsonData;
             const parsedState = JSON.parse(state);
-
+    
             setFarmData((prevFarmData) =>
               prevFarmData.map((farm) =>
                 farm.id === name
@@ -88,6 +88,16 @@ export default function FarmInfoComponent() {
             }
             return newFarmData;
           });
+          break;
+        case "d=":
+          console.log("Fecha recibida:", data);
+          const date = data;
+          setFarmData((prevFarmData) =>
+            prevFarmData.map((farm) => ({
+              ...farm,
+              date: date,
+            }))
+          );
           break;
       }
     };
@@ -144,7 +154,7 @@ export default function FarmInfoComponent() {
                 </div>
                 <div className="flex items-center gap-2 text-blue-500 text-sm sm:text-base">
                   <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>{new Date(info.date).toLocaleDateString()}</span>
+                  <span>{info.date}</span>
                 </div>
                 <div className="flex items-center gap-2 text-green-600 text-sm sm:text-base">
                   <Sprout className="w-4 h-4 sm:w-5 sm:h-5" />

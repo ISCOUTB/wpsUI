@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   executeExe: (exePath, args) => ipcRenderer.invoke('execute-exe', exePath, args),
   clearCsv: () => ipcRenderer.invoke('clear-csv'),
+  fileExists: (filePath) => ipcRenderer.invoke('file-exists', filePath),
   on: (channel, callback) => {
     ipcRenderer.on(channel, callback)
   },

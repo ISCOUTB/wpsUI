@@ -80,30 +80,37 @@ export default function SimulatorConfigPage() {
 
   const handleExecuteExe = async () => {
     try {
-      // Limpiar el archivo CSV primero y esperar a que termine
-      const clearCsvResult = await window.electronAPI.clearCsv();
       
-      if (!clearCsvResult.success) {
-        console.error("Error clearing CSV file:", clearCsvResult.error);
-        return; // Detener la ejecución si hay un error
+      const appPath = await window.electronAPI.getAppPath();
+      const csvPath = path.join(appPath, '/src/wps/logs/wpsSimulator.csv');
+  
+      
+      const csvExists = await window.electronAPI.fileExists(csvPath);
+  
+      if (csvExists) {
+        
+        const clearCsvResult = await window.electronAPI.clearCsv();
+  
+        if (!clearCsvResult.success) {
+          console.error("Error clearing CSV file:", clearCsvResult.error);
+        }
+  
+        console.log("CSV file cleared:", clearCsvResult.path);
+  
+      } else {
+        console.log("CSV file does not exist, proceeding without clearing.");
       }
   
-      console.log("CSV file cleared:", clearCsvResult.path);
-  
-      // Construir argumentos después de limpiar el CSV
-      const args = buildArgs(); 
-      const Path = await window.electronAPI.getAppPath();
-      const exePath = path.join(Path, "/src/wps/wpsSimulator-1.0.exe");
+      
+      const args = buildArgs();
+      const exePath = path.join(appPath, "/src/wps/wpsSimulator-1.0.exe");
   
       console.log("Path:", exePath);
       console.log("Args:", args);
   
-      // Ahora ejecutar el EXE solo después de limpiar el CSV
       const result = await window.electronAPI.executeExe(exePath, args);
       console.log("Execution result:", result);
-  
-      // Redirigir a la página del simulador solo después de la ejecución exitosa
-      router.push("/pages/simulador");
+
     } catch (error) {
       console.error("Error executing command:", error);
       if (error.message.includes("Unrecognized option")) {

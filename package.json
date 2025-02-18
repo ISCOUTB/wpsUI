@@ -57,6 +57,7 @@
     "clsx": "^2.1.1",
     "csv-parser": "^3.2.0",
     "d3-fetch": "^3.0.1",
+    "date-fns": "^4.1.0",
     "electron-is-dev": "^3.0.1",
     "electron-serve": "^2.0.0",
     "framer-motion": "^11.11.7",

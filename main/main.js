@@ -81,12 +81,16 @@ ipcMain.handle('clear-csv', async (event) => {
   const csvPath = path.join(appPath, '/src/wps/logs/wpsSimulator.csv');
 
   try {
-    // Limpiar el archivo CSV de manera sincrónica
+    
     fs.writeFileSync(csvPath, '');
     return { success: true, path: csvPath };
   } catch (error) {
     return { success: false, error: error.message };
   }
+});
+
+ipcMain.handle('file-exists', async (event, filePath) => {
+  return fs.existsSync(filePath);
 });
 
 app.on("window-all-closed", () => {
@@ -108,4 +112,5 @@ app.on("window-all-closed", () => {
     app.quit();
     }
   }
+  
 });
