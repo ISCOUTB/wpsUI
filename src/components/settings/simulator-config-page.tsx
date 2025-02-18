@@ -16,6 +16,7 @@ declare global {
     electronAPI: {
       executeExe: (File: string, args: string[]) => Promise<string>;
       getAppPath: () => Promise<string>;
+      clearCsv: () => Promise<{ success: boolean, path?: string, error?: string }>;
     };
   }
 }
@@ -78,23 +79,39 @@ export default function SimulatorConfigPage() {
   }
 
   const handleExecuteExe = async () => {
-    const args = buildArgs();
-    const Path = await window.electronAPI.getAppPath();
-    console.log("Path:", Path);
-
-    const exePath = path.join(Path, "/src/wps/wpsSimulator-1.0.exe");
-
-    console.log("Path:", exePath);
-    console.log(args);
-
     try {
+      // Limpiar el archivo CSV primero y esperar a que termine
+      const clearCsvResult = await window.electronAPI.clearCsv();
+      
+      if (!clearCsvResult.success) {
+        console.error("Error clearing CSV file:", clearCsvResult.error);
+        return; // Detener la ejecución si hay un error
+      }
+  
+      console.log("CSV file cleared:", clearCsvResult.path);
+  
+      // Construir argumentos después de limpiar el CSV
+      const args = buildArgs(); 
+      const Path = await window.electronAPI.getAppPath();
+      const exePath = path.join(Path, "/src/wps/wpsSimulator-1.0.exe");
+  
+      console.log("Path:", exePath);
+      console.log("Args:", args);
+  
+      // Ahora ejecutar el EXE solo después de limpiar el CSV
       const result = await window.electronAPI.executeExe(exePath, args);
       console.log("Execution result:", result);
+  
+      // Redirigir a la página del simulador solo después de la ejecución exitosa
+      router.push("/pages/simulador");
     } catch (error) {
       console.error("Error executing command:", error);
+      if (error.message.includes("Unrecognized option")) {
+        console.error("Please check the parameter names and values.");
+      }
     }
   };
-
+  
   const handleStartSimulation = () => {
     router.push("/pages/simulador");
   };

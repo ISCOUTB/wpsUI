@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import type React from "react";
-import { useState, useEffect } from "react";
-import moment from "moment"; 
+import React from "react"
+import { useState, useEffect } from "react"
+import moment from "moment"
 import {
   AreaChart,
   Area,
@@ -17,27 +17,16 @@ import {
   PieChart,
   Pie,
   Cell,
-} from "recharts";
-import {
-  fetchCSVData,
-  processCSVData,
-  calculateStatistics,
-  type CSVData,
-} from "@/lib/csvUtils";
+} from "recharts"
 
 interface RangeTooltipProps {
-  active: boolean;
-  payload: any[];
-  label: string;
-  chartColor: string;
+  active: boolean
+  payload: any[]
+  label: string
+  chartColor: string
 }
 
-const RangeTooltip: React.FC<RangeTooltipProps> = ({
-  active,
-  payload,
-  label,
-  chartColor,
-}) => {
+const RangeTooltip: React.FC<RangeTooltipProps> = ({ active, payload, label, chartColor }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-surface p-3">
@@ -49,9 +38,7 @@ const RangeTooltip: React.FC<RangeTooltipProps> = ({
               backgroundColor: chartColor,
             }}
           />
-          <span className="font-clash font-semibold">
-            {moment(label).format("MMM D, YYYY")}
-          </span>
+          <span className="font-clash font-semibold">{moment(label).format("MMM D, YYYY")}</span>
         </div>
         {payload.map((item, index) => (
           <div key={index}>
@@ -61,46 +48,52 @@ const RangeTooltip: React.FC<RangeTooltipProps> = ({
           </div>
         ))}
       </div>
-    );
+    )
   }
-  return null;
-};
-
-interface RangeChartProps {
-  parameter: string;
-  color: string;
-  type: string;
+  return null
 }
 
-export const RangeChart: React.FC<RangeChartProps> = ({
-  parameter,
-  color,
-  type,
-}) => {
-  const [data, setData] = useState<CSVData[]>([]);
-  const [processedData, setProcessedData] = useState<any[]>([]);
-  const [statistics, setStatistics] = useState({
-    avg: 0,
-    max: 0,
-    min: 0,
-    stdDev: 0,
-  });
+interface RangeChartProps {
+  parameter: string
+  color: string
+  type: string
+}
+
+export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }) => {
+  const [data, setData] = useState<APIData[]>([])
+  const [processedData, setProcessedData] = useState<any[]>([])
+  const [statistics, setStatistics] = useState({ avg: 0, max: 0, min: 0, stdDev: 0 })
+
+  const loadData = async () => {
+    try {
+      const response = await fetch(`/api/csv?parameter=${parameter}`);
+      if (!response.ok) throw new Error("Error obteniendo datos");
+
+      const { data, stats } = await response.json();
+      
+      console.log("📊 Datos recibidos:", data); // ✅ Verifica qué datos llegan aquí
+      console.log("📆 Ejemplo de fecha:", data.length > 0 ? data[0].internalCurrentDate : "No hay datos");
+
+      setProcessedData(data);
+      setStatistics(stats);
+    } catch (error) {
+      console.error("Error cargando datos:", error);
+    }
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      const csvData = await fetchCSVData("/wpsSimulator.csv");
-      setData(csvData);
-    };
     loadData();
-  }, []);
+    const interval = setInterval(loadData, 5000); // Actualiza cada 5 segundos
+    return () => clearInterval(interval); // Limpia el intervalo al desmontar el componente
+  }, [parameter]);
 
   useEffect(() => {
     if (data.length > 0) {
-      const processed = processCSVData(data, parameter);
-      setProcessedData(processed);
-      setStatistics(calculateStatistics(data, parameter));
+      const processed = processAPIData(data, parameter)
+      setProcessedData(processed)
+      setStatistics(calculateStatistics(data, parameter))
     }
-  }, [data, parameter]);
+  }, [data, parameter])
 
   const renderChart = () => {
     switch (type) {
@@ -122,7 +115,7 @@ export const RangeChart: React.FC<RangeChartProps> = ({
             </Pie>
             <Tooltip />
           </PieChart>
-        );
+        )
       case "integer":
       case "float":
         return (
@@ -133,35 +126,27 @@ export const RangeChart: React.FC<RangeChartProps> = ({
                 <stop offset="100%" stopColor={color} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              className="stroke-gray-200 dark:stroke-gray-700"
-            />
+            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
             <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              minTickGap={32}
-              tickFormatter={(value) => moment(value).format("MMM D")}
-              className="text-outline-variant dark:text-white"
+            dataKey="date"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            minTickGap={32}
+            tickFormatter={(value) => {
+              console.log("📅 Valor recibido en tickFormatter:", value);
+              return moment(value, "YYYY-MM-DD").isValid() ? moment(value, "YYYY-MM-DD").format("YYYY-MM-DD") : "Fecha inválida";
+            }}
+            className="text-outline-variant dark:text-white"
             />
+
             <YAxis
               type="number"
               domain={["auto", "dataMax"]}
               tickFormatter={(value) => value.toFixed(2)}
               className="text-gray-600 dark:text-gray-300"
             />
-            <Tooltip
-              content={
-                <RangeTooltip
-                  active={false}
-                  payload={[]}
-                  label={""}
-                  chartColor={color}
-                />
-              }
-            />
+            <Tooltip content={<RangeTooltip active={false} payload={[]} label={""} chartColor={color} />} />
             <ReferenceLine
               y={statistics.avg}
               stroke="#ba1a1a"
@@ -181,7 +166,7 @@ export const RangeChart: React.FC<RangeChartProps> = ({
               dot={false}
             />
           </AreaChart>
-        );
+        )
       case "string":
         return (
           <BarChart data={processedData}>
@@ -191,11 +176,11 @@ export const RangeChart: React.FC<RangeChartProps> = ({
             <Tooltip />
             <Bar dataKey={parameter} fill={color} />
           </BarChart>
-        );
+        )
       default:
-        return <></>;
+        return <></>
     }
-  };
+  }
 
   return (
     <div className="w-full h-[70vh] mt-3 bg-background dark:bg-surface-dark">
@@ -285,5 +270,6 @@ export const RangeChart: React.FC<RangeChartProps> = ({
         </ResponsiveContainer>
       </div>
     </div>
-  );
-};
+  )
+}
+

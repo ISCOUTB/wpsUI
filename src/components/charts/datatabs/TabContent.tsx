@@ -5,7 +5,6 @@ import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Calendar, PieChart } from "lucide-react"
-import { AreaSombra } from "../areaSombra"
 import { RangeChart } from "../rangechart"
 import {
   Select,
@@ -147,13 +146,6 @@ const TabContent: React.FC = () => {
               type={selectedType}
             />
           </div>
-          <AreaSombra
-            rutaCsv="/wpsSimulator.csv"
-            colLabel="Agent"
-            colValue1="money"
-            titulo="Emociones vs Tiempo de simulacion"
-            descripcion="Distribucion de las emociones en el tiempo de simulación"
-          />
         </div>
       </TabsContent>
       <TabsContent value="families">

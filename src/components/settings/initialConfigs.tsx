@@ -56,20 +56,22 @@ export default function WPSInitialConfig() {
   const handleExecuteExe = async () => {
     const args = buildArgs(config);
     const Path = await window.electronAPI.getAppPath();
-
+  
     const exePath = path.join(Path, "/src/wps/wpsSimulator-1.0.exe");
-
+  
     console.log("Path:", exePath);
     console.log(args);
-
+  
     try {
       const result = await window.electronAPI.executeExe(exePath, args);
       console.log("Execution result:", result);
     } catch (error) {
       console.error("Error executing command:", error);
+      if (error.message.includes("Unrecognized option")) {
+        console.error("Please check the parameter names and values.");
+      }
     }
   };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
     setConfig((prev) => ({
