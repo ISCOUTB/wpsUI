@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 declare global {
   interface Window {
     electronAPI: {
+      readCsv(): unknown
       executeExe: (File: string, args: string[]) => Promise<string>;
       getAppPath: () => Promise<string>;
       clearCsv: () => Promise<{ success: boolean, path?: string, error?: string }>;

@@ -22,6 +22,8 @@ import { fetchCSVData, type CSVData } from "@/lib/csvUtils";
 import { Download } from "lucide-react";
 import Sidebar from "@/components/Sidebar/sidebar";
 import AnalyticsNavigation from "./analyticsnavigation";
+import moment from "moment";
+import Papa from "papaparse";
 
 const parameters = {
   boolean: [
@@ -221,7 +223,9 @@ const Analytics: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      console.log("Loading data...");
       const data = await fetchCSVData("/src/wps/logs/wpsSimulator.csv");
+      console.log("Data loaded:", data);
       setCsvData(data);
     };
     loadData();
@@ -231,20 +235,51 @@ const Analytics: React.FC = () => {
     setSelectedType(type);
     setSelectedParameter(parameters[type as keyof typeof parameters][0].key);
   };
+  const downloadCSV = async () => {
+    try {
+      // Recargar los datos más recientes
+      const data = await fetchCSVData("src/wps/logs/wpsSimulator.csv");
 
-  const downloadCSV = () => {
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      csvData.map((row) => Object.values(row).join(",")).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "simulation_results.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      if (!data || data.length === 0) {
+        console.error("No hay datos disponibles para descargar");
+        return;
+      }
+
+      // Obtener los encabezados
+      const headers = Object.keys(data[0]);
+
+      // Crear el contenido del CSV usando Papa.unparse
+      const csv = Papa.unparse({
+        fields: headers,
+        data: data,
+      });
+
+      // Crear el blob con el contenido
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+
+      // Crear URL del blob
+      const url = window.URL.createObjectURL(blob);
+
+      // Crear y configurar el enlace de descarga
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `simulation_results_${moment().format("YYYY-MM-DD_HH-mm")}.csv`
+      );
+      link.style.visibility = "hidden";
+
+      // Agregar a documento, click y limpiar
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Liberar la URL del blob
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error al descargar el CSV:", error);
+    }
   };
-
   return (
     <div className="flex">
       <Sidebar />
