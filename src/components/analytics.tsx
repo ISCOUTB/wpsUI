@@ -221,7 +221,7 @@ const Analytics: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      const data = await fetchCSVData("/wpsSimulator.csv");
+      const data = await fetchCSVData("/src/wps/logs/wpsSimulator.csv");
       setCsvData(data);
     };
     loadData();

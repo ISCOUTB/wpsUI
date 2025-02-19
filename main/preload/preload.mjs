@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electronAPI', {
-
+  deleteFile: (path) => ipcRenderer.invoke('delete-file', path),
   executeExe: (exePath, args) => ipcRenderer.invoke('execute-exe', exePath, args),
   clearCsv: () => ipcRenderer.invoke('clear-csv'),
   fileExists: (filePath) => ipcRenderer.invoke('file-exists', filePath),

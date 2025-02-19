@@ -77,31 +77,18 @@ export default function SimulatorConfigPage() {
     ]);
     
   }
-
   const handleExecuteExe = async () => {
     try {
-      
       const appPath = await window.electronAPI.getAppPath();
       const csvPath = path.join(appPath, '/src/wps/logs/wpsSimulator.csv');
   
-      
+      // En lugar de limpiar, eliminamos el archivo si existe
       const csvExists = await window.electronAPI.fileExists(csvPath);
-  
       if (csvExists) {
-        
-        const clearCsvResult = await window.electronAPI.clearCsv();
-  
-        if (!clearCsvResult.success) {
-          console.error("Error clearing CSV file:", clearCsvResult.error);
-        }
-  
-        console.log("CSV file cleared:", clearCsvResult.path);
-  
-      } else {
-        console.log("CSV file does not exist, proceeding without clearing.");
+        await window.electronAPI.deleteFile(csvPath);
+        console.log("CSV file deleted successfully");
       }
   
-      
       const args = buildArgs();
       const exePath = path.join(appPath, "/src/wps/wpsSimulator-1.0.exe");
   
@@ -117,7 +104,7 @@ export default function SimulatorConfigPage() {
         console.error("Please check the parameter names and values.");
       }
     }
-  };
+};
   
   const handleStartSimulation = () => {
     router.push("/pages/simulador");

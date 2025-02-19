@@ -62,6 +62,18 @@ ipcMain.handle('execute-exe', async (event, exePath, args) => {
   });
 });
 
+ipcMain.handle('delete-file', async (_, path) => {
+  try {
+    await fs.promises.unlink(path);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+
+
+
 ipcMain.handle('get-app-path', async () => {
 
   let path;
