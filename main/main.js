@@ -127,13 +127,13 @@ app.on("window-all-closed", () => {
     if (app.isPackaged) {
       execFile("taskkill", ["/pid", javaProcess.pid, "/f", "/t"], (error, stdout, stderr) => {
         if (error) {
-          console.error(stderr || error.message);
+         
           }
       });
     } else {
       exec("taskkill /IM java.exe /F", (error, stdout, stderr) => {
         if (error) {
-          console.error(stderr || error.message);
+         
         }
     }); 
   }

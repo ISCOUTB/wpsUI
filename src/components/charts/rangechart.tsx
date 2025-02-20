@@ -19,6 +19,11 @@ import {
   Cell,
 } from "recharts"
 
+interface APIData {
+  date: string
+  value: number
+}
+
 interface RangeTooltipProps {
   active: boolean
   payload: any[]
@@ -70,14 +75,12 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }
       if (!response.ok) throw new Error("Error obteniendo datos");
 
       const { data, stats } = await response.json();
-      
-      console.log("📊 Datos recibidos:", data); // ✅ Verifica qué datos llegan aquí
-      console.log("📆 Ejemplo de fecha:", data.length > 0 ? data[0].internalCurrentDate : "No hay datos");
+     
 
       setProcessedData(data);
       setStatistics(stats);
     } catch (error) {
-      console.error("Error cargando datos:", error);
+      
     }
   };
 
@@ -89,7 +92,10 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }
 
   useEffect(() => {
     if (data.length > 0) {
-      const processed = processAPIData(data, parameter)
+      const processed = data.map(item => ({
+        date: item.date,
+        [parameter]: item.value
+      }))
       setProcessedData(processed)
       setStatistics(calculateStatistics(data, parameter))
     }
@@ -134,7 +140,7 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }
             tickMargin={8}
             minTickGap={32}
             tickFormatter={(value) => {
-              console.log("📅 Valor recibido en tickFormatter:", value);
+             
               return moment(value, "YYYY-MM-DD").isValid() ? moment(value, "YYYY-MM-DD").format("YYYY-MM-DD") : "Fecha inválida";
             }}
             className="text-outline-variant dark:text-white"
@@ -271,5 +277,9 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }
       </div>
     </div>
   )
+}
+
+function calculateStatistics(data: APIData[], parameter: string): React.SetStateAction<{ avg: number; max: number; min: number; stdDev: number }> {
+  throw new Error("Function not implemented.")
 }
 

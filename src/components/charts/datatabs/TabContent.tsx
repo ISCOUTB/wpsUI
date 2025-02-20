@@ -1,11 +1,17 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Calendar, PieChart } from "lucide-react"
-import { RangeChart } from "../rangechart"
+import type React from "react";
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Users, Calendar, PieChart } from "lucide-react";
+import { RangeChart } from "../rangechart";
 import {
   Select,
   SelectContent,
@@ -14,7 +20,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 
 const parameters = {
   boolean: [
@@ -60,20 +66,22 @@ const parameters = {
     { key: "Agent", color: "#A0D468" },
     { key: "peasantFamilyHelper", color: "#FC6E51" },
   ],
-}
+};
 
 const TabContent: React.FC = () => {
-  const [selectedParameter, setSelectedParameter] = useState(parameters.boolean[0].key)
-  const [selectedType, setSelectedType] = useState("boolean")
+  const [selectedParameter, setSelectedParameter] = useState(
+    parameters.boolean[0].key
+  );
+  const [selectedType, setSelectedType] = useState("boolean");
 
   const handleTypeChange = (type: string) => {
-    setSelectedType(type)
-    setSelectedParameter(parameters[type as keyof typeof parameters][0].key)
-  }
+    setSelectedType(type);
+    setSelectedParameter(parameters[type as keyof typeof parameters][0].key);
+  };
 
   return (
     <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-card rounded-full p-1">
+      <TabsList className="grid w-full grid-cols-2 bg-card rounded-full p-1 justify-center gap-1">
         <TabsTrigger
           value="overview"
           className="rounded-full text-card-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
@@ -83,21 +91,7 @@ const TabContent: React.FC = () => {
         <TabsTrigger
           value="families"
           className="rounded-full text-card-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
-        >
-          Families
-        </TabsTrigger>
-        <TabsTrigger
-          value="events"
-          className="rounded-full text-card-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
-        >
-          Events
-        </TabsTrigger>
-        <TabsTrigger
-          value="emotional"
-          className="rounded-full text-card-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
-        >
-          Emotional Reasoning
-        </TabsTrigger>
+        ></TabsTrigger>
       </TabsList>
       <TabsContent value="overview">
         <div className="grid gap-4 md:grid-cols-1">
@@ -118,21 +112,29 @@ const TabContent: React.FC = () => {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <Select onValueChange={setSelectedParameter} value={selectedParameter}>
+              <Select
+                onValueChange={setSelectedParameter}
+                value={selectedParameter}
+              >
                 <SelectTrigger className="w-[280px]">
                   <SelectValue placeholder="Select a parameter" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Parameters</SelectLabel>
-                    {parameters[selectedType as keyof typeof parameters].map((param) => (
-                      <SelectItem key={param.key} value={param.key}>
-                        <div className="flex items-center">
-                          <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: param.color }}></div>
-                          {param.key}
-                        </div>
-                      </SelectItem>
-                    ))}
+                    {parameters[selectedType as keyof typeof parameters].map(
+                      (param) => (
+                        <SelectItem key={param.key} value={param.key}>
+                          <div className="flex items-center">
+                            <div
+                              className="w-4 h-4 rounded-full mr-2"
+                              style={{ backgroundColor: param.color }}
+                            ></div>
+                            {param.key}
+                          </div>
+                        </SelectItem>
+                      )
+                    )}
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -140,8 +142,9 @@ const TabContent: React.FC = () => {
             <RangeChart
               parameter={selectedParameter}
               color={
-                parameters[selectedType as keyof typeof parameters].find((p) => p.key === selectedParameter)?.color ||
-                "#000000"
+                parameters[selectedType as keyof typeof parameters].find(
+                  (p) => p.key === selectedParameter
+                )?.color || "#000000"
               }
               type={selectedType}
             />
@@ -152,7 +155,9 @@ const TabContent: React.FC = () => {
         <Card className="bg-card text-card-foreground rounded-3xl">
           <CardHeader>
             <CardTitle>Peasant Families</CardTitle>
-            <CardDescription>Detailed list of all simulated families</CardDescription>
+            <CardDescription>
+              Detailed list of all simulated families
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] bg-accent rounded-2xl flex items-center justify-center">
@@ -165,7 +170,9 @@ const TabContent: React.FC = () => {
         <Card className="bg-card text-card-foreground rounded-3xl">
           <CardHeader>
             <CardTitle>Event Timeline</CardTitle>
-            <CardDescription>Chronological view of significant events</CardDescription>
+            <CardDescription>
+              Chronological view of significant events
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] bg-accent rounded-2xl flex items-center justify-center">
@@ -178,7 +185,9 @@ const TabContent: React.FC = () => {
         <Card className="bg-card text-card-foreground rounded-3xl">
           <CardHeader>
             <CardTitle>Emotional Fluctuation</CardTitle>
-            <CardDescription>Average emotional state of families in the community</CardDescription>
+            <CardDescription>
+              Average emotional state of families in the community
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] bg-accent rounded-2xl flex items-center justify-center">
@@ -188,8 +197,7 @@ const TabContent: React.FC = () => {
         </Card>
       </TabsContent>
     </Tabs>
-  )
-}
+  );
+};
 
-export default TabContent
-
+export default TabContent;

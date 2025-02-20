@@ -71,7 +71,7 @@ export const AreaSombra: React.FC<AreaChartFromCsvProps> = ({
             setData(processedData);
           },
           error: (err: any) => {
-            console.error("Error loading CSV:", err);
+           
           },
         });
       });

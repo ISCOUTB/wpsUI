@@ -1,6 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap");
 
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -53,77 +52,10 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
-    @apply bg-background text-foreground font-archivo;
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
-}
-
-@layer components {
-  .bg-content {
-    @apply bg-background;
-  }
-
-  .container {
-    @apply gap-8 w-full min-h-[85vh] ml-20 mt-8 p-8 bg-[#212330] rounded-2xl shadow-lg;
-  }
-
-  .inputGroup {
-    @apply flex flex-col gap-4;
-  }
-
-  .input,
-  .slider {
-    @apply mt-2 p-3 border-2 border-input rounded-lg bg-white text-[#1f2742] transition-all duration-300 ease-in-out;
-  }
-
-  .input:focus,
-  .slider:focus {
-    @apply outline-none border-primary ring-2 ring-primary ring-opacity-30;
-  }
-
-  .slider {
-    @apply w-full appearance-none h-2 bg-[#e5e7eb] opacity-70 rounded-full transition-all duration-200 ease-in-out;
-  }
-
-  .slider:hover {
-    @apply opacity-100 bg-[#d1d5db];
-  }
-
-  .slider::-webkit-slider-thumb {
-    @apply appearance-none w-6 h-6 bg-primary cursor-pointer rounded-full transition-all duration-200 ease-in-out;
-  }
-
-  .slider::-moz-range-thumb {
-    @apply w-6 h-6 bg-primary cursor-pointer rounded-full transition-all duration-200 ease-in-out;
-  }
-
-  .slider::-webkit-slider-thumb:hover,
-  .slider::-moz-range-thumb:hover {
-    @apply bg-[#2563eb] scale-110;
-  }
-
-  .sliderValue {
-    @apply text-right text-sm text-primary mt-2 font-semibold;
-  }
-
-  .dropdowns {
-    @apply w-full grid grid-cols-1 sm:grid-cols-2 mt-8 gap-4;
-  }
-
-  .dropdownToggle {
-    @apply w-full flex justify-between items-center p-2 bg-[#343747] text-[#f0f1f5] rounded font-semibold cursor-pointer transition-colors duration-200 font-wix-madefor;
-  }
-
-  .dropdownToggle:hover {
-    @apply bg-[#eceef1] text-black;
-  }
-
-  .dropdownContent {
-    @apply p-4 bg-[#b9e4f0] border border-[#121419] rounded-b text-[#12151f];
+    body {
+      @apply bg-gray-50 text-gray-900 font-archivo;
+    }
   }
 }
 
@@ -131,7 +63,23 @@
   font-family: "Archivo", sans-serif;
 }
 
-.font-wix-madefor {
-  font-family: "Wix Madefor Display", sans-serif;
+.config-option {
+  @apply transform transition-all duration-300;
 }
 
+.config-option:hover {
+  @apply -translate-y-1;
+}
+
+.save-button {
+  @apply relative overflow-hidden;
+}
+
+.save-button::after {
+  content: "";
+  @apply absolute inset-0 bg-white opacity-0 transition-opacity duration-300;
+}
+
+.save-button:hover::after {
+  @apply opacity-10;
+}

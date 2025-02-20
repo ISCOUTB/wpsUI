@@ -1,18 +1,31 @@
-import type React from "react"
-import { Button } from "@/components/ui/button"
-import { BarChart, PieChart, Download } from "lucide-react"
+import type React from "react";
+import { Button } from "@/components/ui/button";
+import { BarChart, PieChart, Download, HomeIcon, Bot } from "lucide-react";
 
 interface AnalyticsNavigationProps {
-  setActiveSection: (section: string) => void
-  activeSection: string
+  setActiveSection: (section: string) => void;
+  activeSection: string;
 }
 
-const AnalyticsNavigation: React.FC<AnalyticsNavigationProps> = ({ setActiveSection, activeSection }) => {
+const AnalyticsNavigation: React.FC<AnalyticsNavigationProps> = ({
+  setActiveSection,
+  activeSection,
+}) => {
   const navigationItems = [
-    { icon: <BarChart size={20} />, label: "Análisis General", value: "general" },
-    { icon: <PieChart size={20} />, label: "Análisis por Parámetro", value: "parameter" },
-    { icon: <Download size={20} />, label: "Descargar Datos", value: "download" },
-  ]
+    { icon: <HomeIcon size={20} />, label: "Home", value: "home" },
+    {
+      icon: <PieChart size={20} />,
+      label: "Parameter Analysis",
+      value: "parameter",
+    },
+    {
+      icon: <Download size={20} />,
+      label: "Download Data",
+      value: "download",
+    },
+
+    { icon: <Bot size={20} />, label: "Agents", value: "Agents" },
+  ];
 
   return (
     <div className="flex flex-col space-y-2">
@@ -28,8 +41,7 @@ const AnalyticsNavigation: React.FC<AnalyticsNavigationProps> = ({ setActiveSect
         </Button>
       ))}
     </div>
-  )
-}
+  );
+};
 
-export default AnalyticsNavigation
-
+export default AnalyticsNavigation;

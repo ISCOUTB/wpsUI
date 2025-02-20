@@ -27,7 +27,7 @@ const SimulationMap: React.FC = () => {
         const data: FincaData[] = await response.json();
         setMapData(data);
       } catch (err) {
-        console.error("Error loading data", err);
+        console.error("Error loading map data:", err);
       }
     };
 
@@ -49,13 +49,25 @@ const SimulationMap: React.FC = () => {
 
   const onLoad = React.useCallback(
     (map: google.maps.Map) => {
+      // Calculate bounds based on polygons.
       const bounds = new window.google.maps.LatLngBounds();
       mapData.forEach((finca) => {
         finca.coordinates.forEach((coord) => {
           bounds.extend(new google.maps.LatLng(coord[0], coord[1]));
         });
       });
+      // Fit the map to the bounds.
       map.fitBounds(bounds);
+      // Get the center after fitting the bounds.
+      const center = map.getCenter();
+      if (center) {
+        map.setCenter(center);
+      }
+      // Disable dragging and gestures so the center remains fixed.
+      map.setOptions({
+        draggable: false,
+        gestureHandling: "none",
+      });
       mapRef.current = map;
     },
     [mapData]
@@ -64,6 +76,7 @@ const SimulationMap: React.FC = () => {
   const onUnmount = React.useCallback(() => {
     mapRef.current = undefined;
   }, []);
+
   const renderPolygons = () => {
     return mapData
       .filter((finca) => filters.length === 0 || filters.includes(finca.kind))
@@ -71,16 +84,16 @@ const SimulationMap: React.FC = () => {
         let fillColor;
         switch (fincaData.kind) {
           case "road":
-            fillColor = "#708090"; // Coral
+            fillColor = "#708090"; // Slate gray
             break;
           case "water":
-            fillColor = "#00B4D8"; // Azul brillante
+            fillColor = "#00B4D8"; // Bright blue
             break;
           case "forest":
-            fillColor = "#4CAF50"; // Verde vibrante
+            fillColor = "#4CAF50"; // Vibrant green
             break;
           default:
-            fillColor = "#F5DEB3"; // Dorado (para casos no especificados)
+            fillColor = "#F5DEB3"; // Wheat (golden for unspecified cases)
         }
 
         const paths = fincaData.coordinates.map((coord) => ({
@@ -94,8 +107,8 @@ const SimulationMap: React.FC = () => {
             paths={paths}
             options={{
               fillColor: fillColor,
-              fillOpacity: 0.7, // Ajusta la opacidad si es necesario
-              strokeColor: "#000000", // Color del borde
+              fillOpacity: 0.7,
+              strokeColor: "#000000",
               strokeOpacity: 0.8,
               strokeWeight: 2,
             }}
@@ -103,6 +116,7 @@ const SimulationMap: React.FC = () => {
         );
       });
   };
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
@@ -115,7 +129,7 @@ const SimulationMap: React.FC = () => {
 
   return (
     <div
-      className="w-full h-full"
+      className="w-[800px] h-[400px] shadow-lg rounded-md mx-auto my-4"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >

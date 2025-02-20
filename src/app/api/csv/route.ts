@@ -8,12 +8,15 @@ const filePath = path.resolve(process.cwd(), "src/wps/logs/wpsSimulator.csv");
 
 function processCSVData(data: any[], parameter: string) {
   return data.map((item) => {
-    let formattedDate = moment(item.internalCurrentDate, "DD/MM/YYYY").format("YYYY-MM-DD");
-
-    console.log("📆 Formateando fecha:", item.internalCurrentDate, "➡", formattedDate); // DEPURACIÓN
+    let formattedDate = moment(item.internalCurrentDate, "DD/MM/YYYY").format(
+      "YYYY-MM-DD"
+    );
 
     return {
-      date: formattedDate !== "Invalid date" ? formattedDate : item.internalCurrentDate, // Usa la original si hay error
+      date:
+        formattedDate !== "Invalid date"
+          ? formattedDate
+          : item.internalCurrentDate, // Usa la original si hay error
       [parameter]: Number(item[parameter]) || 0, // Convertir a número si es posible
     };
   });
@@ -29,7 +32,9 @@ function calculateStatistics(data: any[], parameter: string) {
   const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
   const max = Math.max(...values);
   const min = Math.min(...values);
-  const variance = values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / values.length;
+  const variance =
+    values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) /
+    values.length;
   const stdDev = Math.sqrt(variance);
 
   return { avg, max, min, stdDev };
@@ -37,7 +42,10 @@ function calculateStatistics(data: any[], parameter: string) {
 
 export async function GET(req: Request) {
   if (!fs.existsSync(filePath)) {
-    return NextResponse.json({ error: "Archivo CSV no encontrado" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Archivo CSV no encontrado" },
+      { status: 404 }
+    );
   }
 
   const results: any[] = [];
@@ -48,19 +56,19 @@ export async function GET(req: Request) {
     fs.createReadStream(filePath)
       .pipe(csvParser())
       .on("data", (data) => {
-        console.log("📄 Fila original del CSV:", data); // ✅ VERIFICA QUÉ DATOS LLEGA DEL CSV
-        
         if (data.internalCurrentDate) {
           // Asegúrate de que se está transformando bien la fecha
-          const formattedDate = moment(data.internalCurrentDate, "DD/MM/YYYY").format("YYYY-MM-DD");
-          console.log("📆 Fecha formateada:", formattedDate);
+          const formattedDate = moment(
+            data.internalCurrentDate,
+            "DD/MM/YYYY"
+          ).format("YYYY-MM-DD");
+
           data.internalCurrentDate = formattedDate;
         }
-      
+
         results.push(data);
       })
-      
-      
+
       .on("end", () => {
         if (!parameter) {
           return resolve(NextResponse.json(results)); // ✅ Retorna todo si no hay parámetro
@@ -71,7 +79,7 @@ export async function GET(req: Request) {
 
         resolve(NextResponse.json({ data: processedData, stats }));
       })
-      .on("error", (error) => 
+      .on("error", (error) =>
         reject(NextResponse.json({ error: error.message }, { status: 500 }))
       );
   });

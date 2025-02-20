@@ -18,10 +18,13 @@ export default function AgentSearch() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("/wpsSimulator.csv");
+        const response = await fetch("/api/getCsv"); // Llamada a la API
+        if (!response.ok) throw new Error("Error obteniendo el CSV");
+
         const text = await response.text();
         const rows = text.split("\n");
         const headers = rows[0].split(",");
+
         const parsedAgents = rows.slice(1).map((row) => {
           const values = row.split(",");
           return headers.reduce((obj, header, index) => {
@@ -29,9 +32,10 @@ export default function AgentSearch() {
             return obj;
           }, {} as Agent);
         });
+
         setAgents(parsedAgents);
       } catch (error) {
-        console.error("Error fetching CSV data:", error);
+        console.error("Error al obtener datos:", error);
       }
     };
     fetchData();
@@ -52,7 +56,7 @@ export default function AgentSearch() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Buscar Agente</CardTitle>
+        <CardTitle>Search an Agent</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -60,7 +64,7 @@ export default function AgentSearch() {
             <Search className="h-4 w-4 text-gray-500" />
             <Input
               type="text"
-              placeholder="Nombre del agente"
+              placeholder="Name of the agent"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1"

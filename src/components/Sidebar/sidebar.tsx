@@ -91,17 +91,13 @@ const Sidebar: React.FC = () => {
                 <DarkTheme />
                 <span
                   className={`ml-2 transition-opacity duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}
-                >
-                  Dark Theme
-                </span>
+                ></span>
               </div>
             </TooltipTrigger>
             <TooltipContent
               side="right"
               className="bg-popover text-popover-foreground"
-            >
-              Dark Theme
-            </TooltipContent>
+            ></TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>

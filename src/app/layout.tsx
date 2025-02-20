@@ -1,11 +1,13 @@
 import "./styles/global.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Archivo, Inter } from "next/font/google";
 import Sidebar from "@/components/Sidebar/sidebar";
 import MapSimulator from "@/components/mapSimulator";
 
-const inter = Inter({ subsets: ["latin"] });
-
+const archivo = Archivo({
+  subsets: ["latin"],
+  variable: "--font-archivo",
+});
 export const metadata: Metadata = {
   title: "WellProdSim",
   description:
@@ -18,10 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body className={inter.className}>
-        <main>{children}</main>
-      </body>
+    <html lang="en" className={archivo.className}>
+      <body className="font-archivo"> {children}</body>
     </html>
   );
 }

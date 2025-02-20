@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Coins, Calendar, Sprout, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/components/ui/use-toast";
 
 interface FarmInfo {
   id: string;
@@ -27,7 +26,6 @@ export default function FarmInfoComponent() {
     socketRef.current = new WebSocket(url);
 
     socketRef.current.onerror = function (event) {
-      console.error("Error en la conexión a la dirección: " + url);
       setTimeout(connectWebSocket, 2000);
     };
 
@@ -36,7 +34,6 @@ export default function FarmInfoComponent() {
         try {
           socketRef.current?.send("setup");
         } catch (error) {
-          console.error(error);
           setTimeout(sendMessage, 2000);
         }
       }
@@ -52,7 +49,7 @@ export default function FarmInfoComponent() {
             let jsonData = JSON.parse(data);
             const { name, state } = jsonData;
             const parsedState = JSON.parse(state);
-    
+
             setFarmData((prevFarmData) =>
               prevFarmData.map((farm) =>
                 farm.id === name
@@ -67,12 +64,9 @@ export default function FarmInfoComponent() {
                   : farm
               )
             );
-          } catch (error) {
-            console.error(error);
-          }
+          } catch (error) {}
           break;
         case "q=":
-          console.log(data);
           let number = parseInt(data, 10);
           setFarmData(() => {
             const newFarmData = [];
@@ -90,7 +84,6 @@ export default function FarmInfoComponent() {
           });
           break;
         case "d=":
-          console.log("Fecha recibida:", data);
           const date = data;
           setFarmData((prevFarmData) =>
             prevFarmData.map((farm) => ({
