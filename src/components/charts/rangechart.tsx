@@ -1,8 +1,7 @@
-"use client"
+"use client";
 
-import React from "react"
-import { useState, useEffect } from "react"
-import moment from "moment"
+import React, { useState, useEffect } from "react";
+import moment from "moment";
 import {
   AreaChart,
   Area,
@@ -17,33 +16,44 @@ import {
   PieChart,
   Pie,
   Cell,
-} from "recharts"
+} from "recharts";
 
 interface APIData {
-  date: string
-  value: number
+  date: string;
+  value: number;
 }
 
 interface RangeTooltipProps {
-  active: boolean
-  payload: any[]
-  label: string
-  chartColor: string
+  active: boolean;
+  payload: any[];
+  label: string;
+  chartColor: string;
 }
 
-const RangeTooltip: React.FC<RangeTooltipProps> = ({ active, payload, label, chartColor }) => {
+const RangeTooltip: React.FC<RangeTooltipProps> = ({
+  active,
+  payload,
+  label,
+  chartColor,
+}) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-surface p-3">
+      <div
+        className="p-3 rounded shadow-md"
+        style={{
+          backgroundColor: "hsl(var(--card))",
+          color: "hsl(var(--card-foreground))",
+        }}
+      >
         <div className="flex flex-row items-center gap-3">
           <div
             id="labelColorIndicator"
-            className="w-4 h-4"
-            style={{
-              backgroundColor: chartColor,
-            }}
+            className="w-4 h-4 rounded"
+            style={{ backgroundColor: chartColor }}
           />
-          <span className="font-clash font-semibold">{moment(label).format("MMM D, YYYY")}</span>
+          <span className="font-clash font-semibold">
+            {moment(label).format("MMM D, YYYY")}
+          </span>
         </div>
         {payload.map((item, index) => (
           <div key={index}>
@@ -53,21 +63,30 @@ const RangeTooltip: React.FC<RangeTooltipProps> = ({ active, payload, label, cha
           </div>
         ))}
       </div>
-    )
+    );
   }
-  return null
-}
+  return null;
+};
 
 interface RangeChartProps {
-  parameter: string
-  color: string
-  type: string
+  parameter: string;
+  color: string;
+  type: string;
 }
 
-export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }) => {
-  const [data, setData] = useState<APIData[]>([])
-  const [processedData, setProcessedData] = useState<any[]>([])
-  const [statistics, setStatistics] = useState({ avg: 0, max: 0, min: 0, stdDev: 0 })
+export const RangeChart: React.FC<RangeChartProps> = ({
+  parameter,
+  color,
+  type,
+}) => {
+  const [data, setData] = useState<APIData[]>([]);
+  const [processedData, setProcessedData] = useState<any[]>([]);
+  const [statistics, setStatistics] = useState({
+    avg: 0,
+    max: 0,
+    min: 0,
+    stdDev: 0,
+  });
 
   const loadData = async () => {
     try {
@@ -75,12 +94,10 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }
       if (!response.ok) throw new Error("Error obteniendo datos");
 
       const { data, stats } = await response.json();
-     
-
       setProcessedData(data);
       setStatistics(stats);
     } catch (error) {
-      
+      // Manejo del error según convenga
     }
   };
 
@@ -92,14 +109,14 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }
 
   useEffect(() => {
     if (data.length > 0) {
-      const processed = data.map(item => ({
+      const processed = data.map((item) => ({
         date: item.date,
-        [parameter]: item.value
-      }))
-      setProcessedData(processed)
-      setStatistics(calculateStatistics(data, parameter))
+        [parameter]: item.value,
+      }));
+      setProcessedData(processed);
+      setStatistics(calculateStatistics(data, parameter));
     }
-  }, [data, parameter])
+  }, [data, parameter]);
 
   const renderChart = () => {
     switch (type) {
@@ -119,9 +136,18 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }
                 <Cell key={`cell-${index}`} fill={color} />
               ))}
             </Pie>
-            <Tooltip />
+            <Tooltip
+              content={
+                <RangeTooltip
+                  active={false}
+                  payload={[]}
+                  label={""}
+                  chartColor={color}
+                />
+              }
+            />
           </PieChart>
-        )
+        );
       case "integer":
       case "float":
         return (
@@ -132,34 +158,46 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }
                 <stop offset="100%" stopColor={color} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-            <XAxis
-            dataKey="date"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            minTickGap={32}
-            tickFormatter={(value) => {
-             
-              return moment(value, "YYYY-MM-DD").isValid() ? moment(value, "YYYY-MM-DD").format("YYYY-MM-DD") : "Fecha inválida";
-            }}
-            className="text-outline-variant dark:text-white"
+            <CartesianGrid
+              strokeDasharray="3 3"
+              className="stroke-[hsl(var(--border))] dark:stroke-[hsl(var(--border))]"
             />
-
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              minTickGap={32}
+              tickFormatter={(value) =>
+                moment(value, "YYYY-MM-DD").isValid()
+                  ? moment(value, "YYYY-MM-DD").format("YYYY-MM-DD")
+                  : "Fecha inválida"
+              }
+              className="text-[hsl(var(--foreground))] dark:text-[hsl(var(--foreground))]"
+            />
             <YAxis
               type="number"
               domain={["auto", "dataMax"]}
               tickFormatter={(value) => value.toFixed(2)}
-              className="text-gray-600 dark:text-gray-300"
+              className="text-[hsl(var(--muted-foreground))] dark:text-[hsl(var(--muted-foreground))]"
             />
-            <Tooltip content={<RangeTooltip active={false} payload={[]} label={""} chartColor={color} />} />
+            <Tooltip
+              content={
+                <RangeTooltip
+                  active={true}
+                  payload={[]}
+                  label={""}
+                  chartColor={color}
+                />
+              }
+            />
             <ReferenceLine
               y={statistics.avg}
               stroke="#ba1a1a"
               label={{
                 value: "Average",
                 position: "insideTopRight",
-                className: "fill-red-600 dark:fill-red-400",
+                className: "text-red-600 dark:text-red-400",
               }}
             />
             <Area
@@ -172,101 +210,107 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }
               dot={false}
             />
           </AreaChart>
-        )
+        );
       case "string":
         return (
           <BarChart data={processedData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              className="stroke-[hsl(var(--border))] dark:stroke-[hsl(var(--border))]"
+            />
+            <XAxis
+              dataKey="date"
+              className="text-[hsl(var(--foreground))] dark:text-[hsl(var(--foreground))]"
+            />
+            <YAxis className="text-[hsl(var(--muted-foreground))] dark:text-[hsl(var(--muted-foreground))]" />
             <Tooltip />
             <Bar dataKey={parameter} fill={color} />
           </BarChart>
-        )
+        );
       default:
-        return <></>
+        return <></>;
     }
-  }
+  };
 
   return (
-    <div className="w-full h-[70vh] mt-3 bg-background dark:bg-surface-dark">
-      <div className="w-full flex flex-col md:flex-row md:items-center md:justify-between border-b dark:border-outline-variant-dark">
+    <div className="w-full h-[70vh] mt-3 bg-[#0f1417] text-[hsl(var(--foreground))] transition-all duration-300 ease-in-out font-archivo">
+      <div className="w-full flex flex-col md:flex-row md:items-center md:justify-between border-b border-[hsl(var(--border))] p-6">
         <div>
-          <h2 className="text-xl font-semibold font-clash text-on-background dark:text-on-background-dark">
+          <h2 className="text-2xl font-semibold tracking-tight font-clash text-[hsl(var(--foreground))]">
             {`${parameter} Data Visualization`}
           </h2>
-          <p className="font-archivo text-sm text-on-surface-variant dark:text-on-surface-variant-dark/60">
+          <p className="font-archivo text-sm text-[hsl(var(--muted-foreground))]">
             Data visualization over time
           </p>
         </div>
         <div>
-          <div className="hidden md:grid grid-cols-4 gap-8 justify-end bg-surface dark:bg-surface-dark my-3">
+          <div className="hidden md:grid grid-cols-4 gap-8 justify-end bg-[#171c1f] dark:bg-[#171c1f] my-3 p-4 rounded">
             <div id="maxContainer">
-              <p className="text-on-surface-variant dark:text-on-surface-variant-dark/60 font-archivo text-sm">
+              <p className="font-archivo text-sm text-[hsl(var(--muted-foreground))]">
                 Month maximum
               </p>
-              <p className="text-on-surface dark:text-on-surface-dark text-lg font-clash font-semibold text-right">
+              <p className="font-clash font-semibold text-lg text-right text-[hsl(var(--foreground))]">
                 {statistics.max.toFixed(2)}
               </p>
             </div>
             <div id="minContainer">
-              <p className="text-on-surface-variant dark:text-on-surface-variant-dark/60 font-archivo text-sm">
+              <p className="font-archivo text-sm text-[hsl(var(--muted-foreground))]">
                 Month minimum
               </p>
-              <p className="text-on-surface dark:text-on-surface-dark text-lg font-clash font-semibold text-right">
+              <p className="font-clash font-semibold text-lg text-right text-[hsl(var(--foreground))]">
                 {statistics.min.toFixed(2)}
               </p>
             </div>
             <div id="averageContainer">
-              <p className="text-on-surface-variant dark:text-on-surface-variant-dark/60 font-archivo text-sm">
+              <p className="font-archivo text-sm text-[hsl(var(--muted-foreground))]">
                 Month average
               </p>
-              <p className="text-on-surface dark:text-on-surface-dark text-lg font-clash font-semibold text-right">
+              <p className="font-clash font-semibold text-lg text-right text-[hsl(var(--foreground))]">
                 {statistics.avg.toFixed(2)}
               </p>
             </div>
             <div id="stdDevContainer">
-              <p className="text-on-surface-variant dark:text-on-surface-variant-dark/60 font-archivo text-sm">
+              <p className="font-archivo text-sm text-[hsl(var(--muted-foreground))]">
                 Month standard deviation
               </p>
-              <p className="text-on-surface dark:text-on-surface-dark text-lg font-clash font-semibold text-right">
+              <p className="font-clash font-semibold text-lg text-right text-[hsl(var(--foreground))]">
                 {statistics.stdDev.toFixed(2)}
               </p>
             </div>
           </div>
         </div>
       </div>
-      <div className="flex flex-col h-[calc(100%-5rem)] p-4">
-        <div className="order-2 grid md:hidden grid-cols-2 gap-8 justify-end bg-surface dark:bg-surface-dark my-3">
+      <div className="flex flex-col h-[calc(100%-5rem)] p-4 rounded-lg border border-[hsl(var(--border))] bg-[#171c1f]">
+        <div className="order-2 grid md:hidden grid-cols-2 gap-8 justify-end bg-[#171c1f] dark:bg-[#171c1f] my-3 p-4 rounded">
           <div id="maxContainer">
-            <p className="text-on-surface-variant dark:text-on-surface-variant-dark/60 font-archivo text-sm">
+            <p className="font-archivo text-sm text-[hsl(var(--muted-foreground))]">
               Month maximum
             </p>
-            <p className="text-on-surface dark:text-on-surface-dark text-lg font-clash font-semibold text-right">
+            <p className="font-clash font-semibold text-lg text-right text-[hsl(var(--foreground))]">
               {statistics.max.toFixed(2)}
             </p>
           </div>
           <div id="minContainer">
-            <p className="text-on-surface-variant dark:text-on-surface-variant-dark/60 font-archivo text-sm">
+            <p className="font-archivo text-sm text-[hsl(var(--muted-foreground))]">
               Month minimum
             </p>
-            <p className="text-on-surface dark:text-on-surface-dark text-lg font-clash font-semibold text-right">
+            <p className="font-clash font-semibold text-lg text-right text-[hsl(var(--foreground))]">
               {statistics.min.toFixed(2)}
             </p>
           </div>
           <div id="averageContainer">
-            <p className="text-on-surface-variant dark:text-on-surface-variant-dark/60 font-archivo text-sm">
+            <p className="font-archivo text-sm text-[hsl(var(--muted-foreground))]">
               Month average
             </p>
-            <p className="text-on-surface dark:text-on-surface-dark text-lg font-clash font-semibold text-right">
+            <p className="font-clash font-semibold text-lg text-right text-[hsl(var(--foreground))]">
               {statistics.avg.toFixed(2)}
             </p>
           </div>
           <div id="stdDevContainer">
-            <p className="text-on-surface-variant dark:text-on-surface-variant-dark/60 font-archivo text-sm">
+            <p className="font-archivo text-sm text-[hsl(var(--muted-foreground))]">
               Month standard deviation
             </p>
-            <p className="text-on-surface dark:text-on-surface-dark text-lg font-clash font-semibold text-right">
+            <p className="font-clash font-semibold text-lg text-right text-[hsl(var(--foreground))]">
               {statistics.stdDev.toFixed(2)}
             </p>
           </div>
@@ -276,10 +320,21 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type }
         </ResponsiveContainer>
       </div>
     </div>
-  )
-}
+  );
+};
 
-function calculateStatistics(data: APIData[], parameter: string): React.SetStateAction<{ avg: number; max: number; min: number; stdDev: number }> {
-  throw new Error("Function not implemented.")
+function calculateStatistics(
+  data: APIData[],
+  parameter: string
+): { avg: number; max: number; min: number; stdDev: number } {
+  // Función de ejemplo para el cálculo de estadísticas
+  const values = data.map((item) => item.value);
+  const avg = values.reduce((sum, v) => sum + v, 0) / values.length || 0;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const stdDev =
+    Math.sqrt(
+      values.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / values.length
+    ) || 0;
+  return { avg, max, min, stdDev };
 }
-

@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -41,12 +43,12 @@ interface ConfigOptionProps {
 
 const ConfigOption = ({ title, description, children }: ConfigOptionProps) => (
   <motion.div
-    className="bg-white p-6 rounded-lg shadow-md"
+    className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)] p-6 rounded-lg shadow-none border border-[hsl(214,14%,18%)]"
     whileHover={{ scale: 1.02 }}
     transition={{ type: "spring", stiffness: 300 }}
   >
     <h3 className="text-lg font-semibold mb-2">{title}</h3>
-    <p className="text-sm text-gray-600 mb-4">{description}</p>
+    <p className="text-sm text-[hsl(217.9,10.6%,64.9%)] mb-4">{description}</p>
     {children}
   </motion.div>
 );
@@ -67,31 +69,28 @@ export default function SimulatorConfigPage() {
 
   const buildArgs = () => {
     const args = {
-      mode: "single", // Se pasa por defecto pero no se muestra en el formulario
-      env: "local", // Se pasa por defecto pero no se muestra en el formulario
-      agents: agents,
-      money: money,
-      land: land,
-      personality: personality,
-      tools: tools,
-      seeds: seeds,
-      water: water,
-      irrigation: irrigation,
-      emotions: emotions,
-      years: years,
+      mode: "single",
+      env: "local",
+      agents,
+      money,
+      land,
+      personality,
+      tools,
+      seeds,
+      water,
+      irrigation,
+      emotions,
+      years,
     };
-
-    return Object.entries(args).flatMap(([key, value]) => [
-      `-${key}`,
-      String(value),
-    ]);
+    return Object.entries(args).flatMap(([key, value]) => [`-${key}`, String(value)]);
   };
+
   const handleExecuteExe = async () => {
     try {
       const appPath = await window.electronAPI.getAppPath();
       const csvPath = path.join(appPath, "/src/wps/logs/wpsSimulator.csv");
 
-      // En lugar de limpiar, eliminamos el archivo si existe
+      // Eliminar el archivo si existe
       const csvExists = await window.electronAPI.fileExists(csvPath);
       if (csvExists) {
         await window.electronAPI.deleteFile(csvPath);
@@ -99,10 +98,10 @@ export default function SimulatorConfigPage() {
 
       const args = buildArgs();
       const exePath = path.join(appPath, "/src/wps/wpsSimulator-1.0.exe");
-
-      const result = await window.electronAPI.executeExe(exePath, args);
+      await window.electronAPI.executeExe(exePath, args);
     } catch (error) {
       if ((error as any).message.includes("Unrecognized option")) {
+        // Manejo de error
       }
     }
   };
@@ -112,10 +111,11 @@ export default function SimulatorConfigPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[hsl(214,17%,8%)] text-[hsl(0,0%,100%)] py-12 px-4 sm:px-6 lg:px-8 font-archivo">
       <div className="max-w-6xl mx-auto">
         <motion.h1
-          className="text-4xl font-extrabold text-center text-gray-900 mb-12"
+          className="text-4xl font-extrabold text-center mb-12 text-[hsl(0,0%,100%)] font-clash p-4 rounded-lg "
+          style={{ backgroundColor: "#004d66" }}
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -124,21 +124,27 @@ export default function SimulatorConfigPage() {
         </motion.h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ConfigOption title="Agents" description="DESCRIPTION">
+          <ConfigOption
+            title="Agents"
+            description="Number of peasant agents participating in the simulation."
+          >
             <Slider
               value={[agents]}
-              onValueChange={(agents) => setAgents(agents[0])}
+              onValueChange={(value) => setAgents(value[0])}
               max={20}
               step={1}
               min={1}
               className="mt-2"
             />
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-[hsl(217.9,10.6%,64.9%)] mt-2">
               Current Agents: {agents}
             </p>
           </ConfigOption>
 
-          <ConfigOption title="Money" description="DESCRIPTION">
+          <ConfigOption
+            title="Money"
+            description="Initial amount of money each agent starts with."
+          >
             <Input
               placeholder={String(money)}
               onChange={(e) => setMoney(Number(e.target.value))}
@@ -147,19 +153,27 @@ export default function SimulatorConfigPage() {
             />
           </ConfigOption>
 
-          <ConfigOption title="Land" description="DESCRIPTION">
+          <ConfigOption
+            title="Land"
+            description="Number of farmland plots available."
+          >
             <Slider
               value={[land]}
-              onValueChange={(land) => setLand(land[0])}
+              onValueChange={(value) => setLand(value[0])}
               max={20}
               step={1}
               min={1}
               className="mt-2"
             />
-            <p className="text-sm text-gray-500 mt-2">Current Lands: {land}</p>
+            <p className="text-sm text-[hsl(217.9,10.6%,64.9%)] mt-2">
+              Current Lands: {land}
+            </p>
           </ConfigOption>
 
-          <ConfigOption title="Personality" description="DESCRIPTION">
+          <ConfigOption
+            title="Personality"
+            description="Index representing each agent's personality traits."
+          >
             <div className="flex items-center space-x-2 mt-2">
               <Input
                 placeholder={String(personality)}
@@ -170,7 +184,10 @@ export default function SimulatorConfigPage() {
             </div>
           </ConfigOption>
 
-          <ConfigOption title="Tools" description="DESCRIPTION">
+          <ConfigOption
+            title="Tools"
+            description="Amount of farming tools available."
+          >
             <Input
               placeholder={String(tools)}
               type="number"
@@ -179,7 +196,10 @@ export default function SimulatorConfigPage() {
             />
           </ConfigOption>
 
-          <ConfigOption title="Seeds" description="DESCRIPTION">
+          <ConfigOption
+            title="Seeds"
+            description="Number of seeds available for planting."
+          >
             <Input
               placeholder={String(seeds)}
               type="number"
@@ -188,7 +208,10 @@ export default function SimulatorConfigPage() {
             />
           </ConfigOption>
 
-          <ConfigOption title="Water" description="DESCRIPTION">
+          <ConfigOption
+            title="Water"
+            description="Initial water resources available."
+          >
             <Input
               placeholder={String(water)}
               type="number"
@@ -197,7 +220,10 @@ export default function SimulatorConfigPage() {
             />
           </ConfigOption>
 
-          <ConfigOption title="Irrigation" description="DESCRIPTION">
+          <ConfigOption
+            title="Irrigation"
+            description="Irrigation system level (0 = none, higher = better)."
+          >
             <Input
               placeholder={String(irrigation)}
               type="number"
@@ -206,7 +232,10 @@ export default function SimulatorConfigPage() {
             />
           </ConfigOption>
 
-          <ConfigOption title="Emotions" description="DESCRIPTION">
+          <ConfigOption
+            title="Emotions"
+            description="Emotional complexity level for agents."
+          >
             <Input
               placeholder={String(emotions)}
               type="number"
@@ -215,21 +244,26 @@ export default function SimulatorConfigPage() {
             />
           </ConfigOption>
 
-          <ConfigOption title="Years" description="DESCRIPTION">
+          <ConfigOption
+            title="Years"
+            description="Number of years the simulation should run."
+          >
             <Slider
               value={[years]}
-              onValueChange={(years) => setYears(years[0])}
+              onValueChange={(value) => setYears(value[0])}
               max={100}
               step={1}
               min={1}
               className="mt-2"
             />
-            <p className="text-sm text-gray-500 mt-2">Current Years: {years}</p>
+            <p className="text-sm text-[hsl(217.9,10.6%,64.9%)] mt-2">
+              Current Years: {years}
+            </p>
           </ConfigOption>
         </div>
 
         <motion.button
-          className="mt-12 w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
+          className="mt-12 w-full bg-[hsl(221.2,83.2%,53.3%)] text-[hsl(210,40%,98%)] py-3 px-6 rounded-lg font-semibold hover:bg-[hsl(221.2,83.2%,53.3%)]/90 transition-colors duration-200"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => {

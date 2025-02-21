@@ -1,0 +1,193 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap");
+@import url("https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 214 17% 8%;
+    --foreground: 0 0% 100%;
+
+    --card: 210 14% 11%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 210 14% 11%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 14% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 14% 15%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+
+    --accent: 210 14% 15%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 14% 18%;
+    --input: 214 14% 18%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
+  }
+}
+
+.font-clash {
+  font-family: "Clash Display", sans-serif;
+}
+
+.font-archivo {
+  font-family: "Archivo", sans-serif;
+}
+
+.analytics-container {
+  @apply min-h-screen bg-[#0f1417] text-foreground transition-all duration-300 ease-in-out font-archivo;
+}
+
+.analytics-card {
+  @apply bg-[#171c1f] text-card-foreground shadow-lg transition-all duration-300;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+}
+
+.analytics-header {
+  @apply space-y-1.5 p-6;
+}
+
+.analytics-title {
+  @apply text-2xl font-semibold tracking-tight font-clash;
+  color: hsl(var(--foreground));
+}
+
+.analytics-description {
+  @apply text-sm text-muted-foreground font-archivo;
+}
+
+.analytics-content {
+  @apply p-6 pt-0;
+}
+
+.analytics-navigation {
+  @apply space-y-4 transition-all duration-300;
+}
+
+.analytics-section {
+  @apply space-y-6 animate-in fade-in-50 duration-300;
+}
+
+.analytics-welcome {
+  @apply space-y-4 max-w-prose;
+}
+
+.analytics-welcome h2 {
+  @apply font-clash;
+}
+
+.analytics-welcome p {
+  @apply text-muted-foreground leading-relaxed font-archivo;
+}
+
+.analytics-button {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-archivo;
+}
+
+.analytics-parameter {
+  @apply space-y-6;
+}
+
+.analytics-parameter h2 {
+  @apply font-clash;
+}
+
+.analytics-chart-container {
+  @apply mt-6 rounded-lg border bg-[#171c1f] p-4;
+  border-color: hsl(var(--border));
+}
+
+.analytics-agents {
+  @apply space-y-4;
+}
+
+.analytics-agents h2 {
+  @apply font-clash;
+}
+
+.analytics-agents p {
+  @apply text-muted-foreground leading-relaxed mb-6 font-archivo;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .analytics-layout {
+    @apply flex-col;
+  }
+
+  .analytics-sidebar {
+    @apply w-full pr-0 mb-6;
+  }
+
+  .analytics-content {
+    @apply p-4;
+  }
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+/* Interactive elements */
+.interactive-hover {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.interactive-hover:hover {
+  @apply -translate-y-0.5;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+/* Loading states */
+.loading-skeleton {
+  @apply animate-pulse bg-[#171c1f] rounded;
+}
+
+/* Focus states */
+.focus-ring {
+  @apply focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-offset-[#0f1417];
+}

@@ -1,56 +1,77 @@
 import { app, BrowserWindow, Menu, ipcMain } from "electron";
 import path, { dirname } from "path";
-import serve from 'electron-serve'
-import { execFile } from "child_process";
-import { exec } from "child_process";
+import serve from "electron-serve";
+import { execFile, exec } from "child_process";
 import { fileURLToPath } from "url";
-import { kill } from "process";
-import fs from 'fs';
-app.commandLine.appendSwitch('no-sandbox');
-let isDev
+import fs from "fs";
+
+app.commandLine.appendSwitch("no-sandbox");
+
+let isDev;
 try {
-  isDev = require('electron-is-dev').default
+  isDev = require("electron-is-dev").default;
 } catch (error) {
-  isDev = false
+  isDev = false;
 }
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const appServe = app.isPackaged
-  ? serve({
-      directory: path.join(__dirname, '../out'),
-    })
-  : null
+  ? serve({ directory: path.join(__dirname, "../out") })
+  : null;
+
+let mainWindow;
+let splash;
 
 const createWindow = () => {
-  const win = new BrowserWindow({
+  // Crear la ventana del splash
+  splash = new BrowserWindow({
+    width: 400,
+    height: 300,
+    frame: false,
+    alwaysOnTop: true,
+    resizable: false,
+    transparent: true,
+    show: true,
+  });
+
+  splash.loadFile(path.join(__dirname, "splash.html"));
+
+  // Crear la ventana principal
+  mainWindow = new BrowserWindow({
     width: 1920,
     height: 1080,
     title: "WpsUI - UTB",
+    show: false,
     webPreferences: {
-      preload: path.join(__dirname, "/preload/preload.mjs"), // Asegúrate de que el preload esté configurado aquí
+      preload: path.join(__dirname, "/preload/preload.mjs"),
       nodeIntegration: true,
       contextIsolation: true,
     },
   });
 
   if (app.isPackaged) {
-    appServe(win).then(() => {
-      win.loadURL('app://-')
-    })
+    appServe(mainWindow).then(() => {
+      mainWindow.loadURL("app://-");
+    });
   } else {
-    win.loadURL("http://localhost:3000");
+    mainWindow.loadURL("http://localhost:3000");
     Menu.setApplicationMenu(null);
-    win.webContents.openDevTools();
+    mainWindow.webContents.openDevTools();
   }
+
+  mainWindow.once("ready-to-show", () => {
+    splash.destroy();
+    mainWindow.show();
+  });
 };
 
 app.on("ready", createWindow);
 
 let javaProcess;
 
-ipcMain.handle('execute-exe', async (event, exePath, args) => {
+ipcMain.handle("execute-exe", async (event, exePath, args) => {
   return new Promise((resolve, reject) => {
     javaProcess = execFile(exePath, args, (error, stdout, stderr) => {
       if (error) {
@@ -62,54 +83,41 @@ ipcMain.handle('execute-exe', async (event, exePath, args) => {
   });
 });
 
-ipcMain.handle('delete-file', async (_, path) => {
+ipcMain.handle("delete-file", async (_, filePath) => {
   try {
-    await fs.promises.unlink(path);
+    await fs.promises.unlink(filePath);
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
   }
 });
 
-
-
-
-ipcMain.handle('get-app-path', async () => {
-
-  let path;
-
-  if (app.isPackaged) {
-    path = app.getAppPath() + ".unpacked";
-  } else {
-    path = app.getAppPath();
-  }
-
-  return path;
+ipcMain.handle("get-app-path", async () => {
+  return app.isPackaged ? app.getAppPath() + ".unpacked" : app.getAppPath();
 });
 
-
-ipcMain.handle('clear-csv', async (event) => {
-  const appPath = app.getAppPath();
-  const csvPath = path.join(appPath, '/src/wps/logs/wpsSimulator.csv');
-
+ipcMain.handle("clear-csv", async () => {
   try {
-    
-    fs.writeFileSync(csvPath, '');
+    const csvPath = path.join(
+      app.getAppPath(),
+      "/src/wps/logs/wpsSimulator.csv"
+    );
+    fs.writeFileSync(csvPath, "");
     return { success: true, path: csvPath };
   } catch (error) {
     return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('read-csv', async () => {
+ipcMain.handle("read-csv", async () => {
   try {
-    const appPath = app.getAppPath();
-    const csvPath = path.join(appPath, '/src/wps/logs/wpsSimulator.csv');
-
+    const csvPath = path.join(
+      app.getAppPath(),
+      "/src/wps/logs/wpsSimulator.csv"
+    );
     if (!fs.existsSync(csvPath)) {
       return { success: false, error: "Archivo no encontrado" };
     }
-
     const data = fs.readFileSync(csvPath, "utf-8");
     return { success: true, data };
   } catch (error) {
@@ -117,29 +125,19 @@ ipcMain.handle('read-csv', async () => {
   }
 });
 
-
-ipcMain.handle('file-exists', async (event, filePath) => {
+ipcMain.handle("file-exists", async (event, filePath) => {
   return fs.existsSync(filePath);
 });
 
 app.on("window-all-closed", () => {
   if (javaProcess) {
     if (app.isPackaged) {
-      execFile("taskkill", ["/pid", javaProcess.pid, "/f", "/t"], (error, stdout, stderr) => {
-        if (error) {
-         
-          }
-      });
+      execFile("taskkill", ["/pid", javaProcess.pid, "/f", "/t"], () => {});
     } else {
-      exec("taskkill /IM java.exe /F", (error, stdout, stderr) => {
-        if (error) {
-         
-        }
-    }); 
+      exec("taskkill /IM java.exe /F", () => {});
+    }
   }
   if (process.platform !== "darwin") {
     app.quit();
-    }
   }
-  
 });

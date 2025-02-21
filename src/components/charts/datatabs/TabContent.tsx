@@ -3,13 +3,7 @@
 import type React from "react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Calendar, PieChart } from "lucide-react";
 import { RangeChart } from "../rangechart";
 import {
@@ -80,26 +74,32 @@ const TabContent: React.FC = () => {
   };
 
   return (
-    <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="flex bg-card rounded-full p-1 justify-center gap-2 w-full">
+    <Tabs defaultValue="overview" className="w-full h-full">
+      {/* Lista de pestañas */}
+      <TabsList className="flex bg-[hsl(210,14%,11%)] rounded-full p-1 justify-center gap-2 w-full">
         <TabsTrigger
           value="overview"
-          className="rounded-full text-card-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all text-center w-full py-1.5 text-lg"
+          className="rounded-full text-[hsl(0,0%,100%)] data-[state=active]:bg-[hsl(221.2,83.2%,53.3%)] data-[state=active]:text-[hsl(210,40%,98%)] transition-all text-center w-full py-1.5 text-lg"
         >
           Overview
         </TabsTrigger>
-        
       </TabsList>
-      <TabsContent value="overview">
-        <div className="grid gap-4 md:grid-cols-1">
-          <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">CSV Data Visualization</h1>
-            <div className="mb-4 flex space-x-4">
+
+      {/* Contenido de la pestaña "Overview" */}
+      <TabsContent value="overview" className="h-full">
+        {/* Se elimina el borde y sombra del Card con border-none y shadow-none */}
+        <Card className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)] rounded-3xl h-full border-none shadow-none">
+          <CardHeader className="p-6">
+            <CardTitle className="text-2xl font-bold font-clash">
+              CSV Data Visualization
+            </CardTitle>
+            {/* Área de selección integrada en la cabecera */}
+            <div className="flex flex-col md:flex-row gap-4 mt-4">
               <Select onValueChange={handleTypeChange} value={selectedType}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-[200px] bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)]">
                   <SelectValue placeholder="Select a type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)]">
                   <SelectGroup>
                     <SelectLabel>Parameter Types</SelectLabel>
                     <SelectItem value="boolean">Boolean</SelectItem>
@@ -113,10 +113,10 @@ const TabContent: React.FC = () => {
                 onValueChange={setSelectedParameter}
                 value={selectedParameter}
               >
-                <SelectTrigger className="w-[280px]">
+                <SelectTrigger className="w-[280px] bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)]">
                   <SelectValue placeholder="Select a parameter" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)]">
                   <SelectGroup>
                     <SelectLabel>Parameters</SelectLabel>
                     {parameters[selectedType as keyof typeof parameters].map(
@@ -136,59 +136,19 @@ const TabContent: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <RangeChart
-              parameter={selectedParameter}
-              color={
-                parameters[selectedType as keyof typeof parameters].find(
-                  (p) => p.key === selectedParameter
-                )?.color || "#000000"
-              }
-              type={selectedType}
-            />
-          </div>
-        </div>
-      </TabsContent>
-      <TabsContent value="families">
-        <Card className="bg-card text-card-foreground rounded-3xl">
-          <CardHeader>
-            <CardTitle>Peasant Families</CardTitle>
-            <CardDescription>
-              Detailed list of all simulated families
-            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-[300px] bg-accent rounded-2xl flex items-center justify-center">
-              <Users size={100} className="text-accent-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="events">
-        <Card className="bg-card text-card-foreground rounded-3xl">
-          <CardHeader>
-            <CardTitle>Event Timeline</CardTitle>
-            <CardDescription>
-              Chronological view of significant events
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] bg-accent rounded-2xl flex items-center justify-center">
-              <Calendar size={100} className="text-accent-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="emotional">
-        <Card className="bg-card text-card-foreground rounded-3xl">
-          <CardHeader>
-            <CardTitle>Emotional Fluctuation</CardTitle>
-            <CardDescription>
-              Average emotional state of families in the community
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] bg-accent rounded-2xl flex items-center justify-center">
-              <PieChart size={100} className="text-accent-foreground" />
+          <CardContent className="flex flex-col h-full p-4">
+            {/* Sección de gráfica que ocupa el espacio restante, sin borde */}
+            <div className="flex-grow rounded-lg">
+              <RangeChart
+                parameter={selectedParameter}
+                color={
+                  parameters[selectedType as keyof typeof parameters].find(
+                    (p) => p.key === selectedParameter
+                  )?.color || "#000000"
+                }
+                type={selectedType}
+              />
             </div>
           </CardContent>
         </Card>

@@ -1,12 +1,10 @@
 import "./styles/global.css";
 import type { Metadata } from "next";
 import { Archivo, Inter } from "next/font/google";
-import Sidebar from "@/components/Sidebar/sidebar";
-import MapSimulator from "@/components/mapSimulator";
 
 const archivo = Archivo({
-  subsets: ["latin"],
   variable: "--font-archivo",
+  subsets: ["latin"],
 });
 export const metadata: Metadata = {
   title: "WellProdSim",
@@ -21,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={archivo.className}>
-      <body className="font-archivo"> {children}</body>
+      <body className="font-archivo">{children}</body>
     </html>
   );
 }

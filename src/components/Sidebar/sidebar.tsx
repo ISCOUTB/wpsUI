@@ -1,15 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
-import {
-  Home,
-  PieChart,
-  Settings,
-  ChevronRight,
-  ChevronLeft,
-  Mail,
-} from "lucide-react";
+import { Home, PieChart, Settings, Mail } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -20,10 +12,7 @@ import { useTheme } from "next-themes";
 import DarkTheme from "../darktheme";
 
 const Sidebar: React.FC = () => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const { theme, setTheme } = useTheme();
-
-  const toggleSidebar = () => setIsExpanded(!isExpanded);
 
   const menuItems = [
     { icon: <Home size={20} />, label: "Home Page", href: "/pages/simulador" },
@@ -37,20 +26,15 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <div
-      className={`bg-background text-foreground transition-all duration-300 ease-in-out ${isExpanded ? "w-48" : "w-12"} flex flex-col h-full`}
-    >
-      {/* Botón de expansión */}
-      <div className="p-2 flex justify-between items-center">
-        <button
-          onClick={toggleSidebar}
-          className="text-foreground hover:text-[#3b82f6] transition-colors"
-        >
-          {isExpanded ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-        </button>
+    <div className="bg-[#171c1f] text-foreground w-88 flex flex-col h-full">
+      {/* Encabezado del sidebar */}
+      <div className="p-4">
+        <h1 className="text-xl font-bold text-foreground">
+          Well Prod Simulation
+        </h1>
       </div>
 
-      {/* Menú items */}
+      {/* Menú de ítems */}
       <nav className="flex-1">
         <TooltipProvider>
           {menuItems.map((item, index) => (
@@ -61,11 +45,7 @@ const Sidebar: React.FC = () => {
                   className="flex items-center py-2 px-3 text-foreground hover:bg-accent hover:text-[#3b82f6] rounded transition-colors"
                 >
                   {item.icon}
-                  <span
-                    className={`ml-2 transition-opacity duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}
-                  >
-                    {item.label}
-                  </span>
+                  <span className="ml-2">{item.label}</span>
                 </a>
               </TooltipTrigger>
               <TooltipContent
@@ -78,29 +58,6 @@ const Sidebar: React.FC = () => {
           ))}
         </TooltipProvider>
       </nav>
-
-      {/* DarkTheme al final del sidebar */}
-      <div className="p-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                className="flex items-center py-2 px-3 text-foreground hover:bg-accent hover:text-[#3b82f6] rounded transition-colors cursor-pointer"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              >
-                <DarkTheme />
-                <span
-                  className={`ml-2 transition-opacity duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}
-                ></span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent
-              side="right"
-              className="bg-popover text-popover-foreground"
-            ></TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
     </div>
   );
 };

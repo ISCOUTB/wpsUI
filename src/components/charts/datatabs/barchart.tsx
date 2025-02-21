@@ -9,7 +9,8 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Label, // Add this line to import Label from recharts
+  Label,
+  ResponsiveContainer,
 } from "recharts";
 import {
   Card,
@@ -26,6 +27,7 @@ const chartConfig = {
   money: {
     label: "Money",
     color: "#007bff", // Color azul para la barra
+    colorbg: "#007bff", // Color azul para el fondo
     description: "Cantidad de dinero que posee el agente.",
   },
 };
@@ -46,63 +48,51 @@ export default function BarChartComponent() {
   const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
-    // Se obtiene el CSV desde la API /api/getCsv
-    fetch("/api/getCsv")
-      .then((response) => response.text())
-      .then((csvText) => {
-        const lines = csvText.split("\n").filter(Boolean);
-        const headers = lines[0].split(",");
-        const data = lines.slice(1).map((line) => {
-          const values = line.split(",");
-          const obj: any = {};
-          headers.forEach((header, index) => {
-            obj[header.trim()] = values[index]?.trim();
-          });
-          if (obj.money) {
-            obj.money = parseFloat(obj.money);
-          }
-          return obj;
-        });
-        setChartData(data);
-      })
-      .catch((error) =>
-        console.error("Error fetching CSV data from API:", error)
-      );
+    // Simulación de datos de dinero durante el año con 4 registros
+    const simulatedData = [
+      { years: "Enero", money: 1200 },
+      { years: "Abril", money: 1500 },
+      { years: "Julio", money: 1800 },
+      { years: "Octubre", money: 2100 },
+    ];
+    setChartData(simulatedData);
   }, []);
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Graphics</CardTitle>
-        <CardDescription>Agent's Money Data</CardDescription>
-      </CardHeader>
+      <CardHeader></CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <BarChart data={chartData} width={800} height={400}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="years"
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-              tickFormatter={(value) => value.slice(0, 3)}
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart
+              data={chartData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
             >
-              <Label value="Month" offset={-5} position="insideBottom" />
-            </XAxis>
-            <YAxis tickLine={false} axisLine={false}>
-              <Label
-                value="Money"
-                angle={-90}
-                position="insideLeft"
-                style={{ textAnchor: "start", fontSize: 20 }}
-              />
-            </YAxis>
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="money" fill={chartConfig.money.color} radius={10} />
-          </BarChart>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="years"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+                tickFormatter={(value) => value.slice(0, 3)}
+              >
+                <Label value="Month" offset={-18} position="insideBottom" />
+              </XAxis>
+              <YAxis tickLine={false} axisLine={false}>
+                <Label
+                  value="Money"
+                  angle={-90}
+                  position="insideLeft"
+                  style={{ textAnchor: "start", fontSize: 20 }}
+                />
+              </YAxis>
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="money" fill={chartConfig.money.color} radius={10} />
+            </BarChart>
+          </ResponsiveContainer>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col items-start gap-2 text-xl ">
+      <CardFooter className="flex-col items-start gap-2 text-xl">
         <div className="leading-none text-muted-foreground">
           Showing the agent's money over the last period
         </div>

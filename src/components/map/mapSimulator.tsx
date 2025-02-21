@@ -10,18 +10,14 @@ interface FincaData {
 }
 
 interface AgentData {
-  name_agent: string
-  lands: LandData[]
+  name_agent: string;
+  lands: LandData[];
 }
 
 interface LandData {
   name: string;
   current_season: string;
 }
-
-
-
-
 
 const SimulationMap: React.FC = () => {
   const mapRef = useRef<google.maps.Map>();
@@ -142,12 +138,11 @@ const SimulationMap: React.FC = () => {
     };
   };
 
-
   useEffect(() => {
     const connectWebSocket2 = () => {
       const url = "ws://localhost:8000/wpsViewer";
       socketRef.current = new WebSocket(url);
-  
+
       socketRef.current.onerror = function (event) {
         console.error("Error en la conexión a la dirección: " + url);
         setTimeout(connectWebSocket, 2000);
@@ -162,19 +157,20 @@ const SimulationMap: React.FC = () => {
               let jsonData = JSON.parse(data);
               const { name, state } = jsonData;
               const parsedState = JSON.parse(state);
-              if (agentData!==null){ 
+              if (agentData !== null) {
                 const lands_number = parsedState.assignedLands.length;
                 //console.log(lands_number);
                 for (let i = 0; i < agentData.length; i++) {
                   if (agentData[i].name_agent === name) {
                     agentData[i].lands = [];
                     for (let j = 0; j < lands_number; j++) {
-                      const land_name = parsedState.assignedLands[j].landName
+                      const land_name = parsedState.assignedLands[j].landName;
                       //tomar los primeros digitos hasta que encuentre el segundo _
                       const land_name_short = land_name.split("_")[1];
                       agentData[i].lands.push({
                         name: "land_" + land_name_short,
-                        current_season: parsedState.assignedLands[j].currentSeason,
+                        current_season:
+                          parsedState.assignedLands[j].currentSeason,
                       });
                     }
                   }
@@ -191,20 +187,18 @@ const SimulationMap: React.FC = () => {
 
     //repetir cada 5 segundos
     const interval = setInterval(() => {
-    const landNames: string[] = [];
-    const seasonNames: string[] = [];
-    agentData.forEach((agent) => {
-      agent.lands.forEach((land) => {
-        landNames.push(land.name);
-        seasonNames.push(land.current_season);
+      const landNames: string[] = [];
+      const seasonNames: string[] = [];
+      agentData.forEach((agent) => {
+        agent.lands.forEach((land) => {
+          landNames.push(land.name);
+          seasonNames.push(land.current_season);
+        });
       });
-    });
-    setSpecificLandNames(landNames);
+      setSpecificLandNames(landNames);
       setSpecificSeason(seasonNames);
     }, 1000);
   }, [agentData]);
-
-
 
   const renderPolygons = () => {
     return mapData
@@ -276,7 +270,6 @@ const SimulationMap: React.FC = () => {
     setFilters((prev) => [...prev, filter]);
   };
 
-
   return (
     <div
       className="w-full h-full"
@@ -290,7 +283,9 @@ const SimulationMap: React.FC = () => {
           onLoad={onLoad}
           onUnmount={onUnmount}
           options={{
-            scrollwheel: true,
+            draggable: false,
+            gestureHandling: "none",
+            scrollwheel: false,
             styles: [
               { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
               {
