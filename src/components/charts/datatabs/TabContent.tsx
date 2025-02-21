@@ -81,17 +81,14 @@ const TabContent: React.FC = () => {
 
   return (
     <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 bg-card rounded-full p-1 justify-center gap-1">
+      <TabsList className="flex bg-card rounded-full p-1 justify-center gap-2 w-full">
         <TabsTrigger
           value="overview"
-          className="rounded-full text-card-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+          className="rounded-full text-card-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all text-center w-full py-1.5 text-lg"
         >
           Overview
         </TabsTrigger>
-        <TabsTrigger
-          value="families"
-          className="rounded-full text-card-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
-        ></TabsTrigger>
+        
       </TabsList>
       <TabsContent value="overview">
         <div className="grid gap-4 md:grid-cols-1">

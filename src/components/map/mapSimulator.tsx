@@ -9,10 +9,31 @@ interface FincaData {
   name: string;
 }
 
+interface AgentData {
+  name_agent: string
+  lands: LandData[]
+}
+
+interface LandData {
+  name: string;
+  current_season: string;
+}
+
+
+
+
+
 const SimulationMap: React.FC = () => {
   const mapRef = useRef<google.maps.Map>();
+  const socketRef = useRef<WebSocket | null>(null);
+  const [agentData, setAgentData] = useState<AgentData[]>([]);
   const [mapData, setMapData] = useState<FincaData[]>([]);
   const [filters, setFilters] = useState<string[]>([]);
+  const [landColor, setLandColor] = useState<string>("#F5DEB3");
+  const [specificLandColor, setSpecificLandColor] = useState<string>("#F5DEB3");
+  const [specificLandNames, setSpecificLandNames] = useState<string[]>([]);
+  const [specificSeason, setSpecificSeason] = useState<string[]>([]);
+
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey:
@@ -27,7 +48,7 @@ const SimulationMap: React.FC = () => {
         const data: FincaData[] = await response.json();
         setMapData(data);
       } catch (err) {
-        console.error("Error loading map data:", err);
+        console.error("Error loading data", err);
       }
     };
 
@@ -47,27 +68,29 @@ const SimulationMap: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, []);
 
+  useEffect(() => {
+    const colors = ["#F5DEB3", "#FFD700", "#FFA500", "#FF4500"];
+    const interval = setInterval(() => {
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      setSpecificLandColor(randomColor);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    connectWebSocket();
+  }, [mapData]);
+
   const onLoad = React.useCallback(
     (map: google.maps.Map) => {
-      // Calculate bounds based on polygons.
       const bounds = new window.google.maps.LatLngBounds();
       mapData.forEach((finca) => {
         finca.coordinates.forEach((coord) => {
           bounds.extend(new google.maps.LatLng(coord[0], coord[1]));
         });
       });
-      // Fit the map to the bounds.
       map.fitBounds(bounds);
-      // Get the center after fitting the bounds.
-      const center = map.getCenter();
-      if (center) {
-        map.setCenter(center);
-      }
-      // Disable dragging and gestures so the center remains fixed.
-      map.setOptions({
-        draggable: false,
-        gestureHandling: "none",
-      });
       mapRef.current = map;
     },
     [mapData]
@@ -77,23 +100,149 @@ const SimulationMap: React.FC = () => {
     mapRef.current = undefined;
   }, []);
 
+  const connectWebSocket = () => {
+    const url = "ws://localhost:8000/wpsViewer";
+    socketRef.current = new WebSocket(url);
+
+    socketRef.current.onerror = function (event) {
+      console.error("Error en la conexión a la dirección: " + url);
+      setTimeout(connectWebSocket, 2000);
+    };
+
+    socketRef.current.onopen = function (event) {
+      function sendMessage() {
+        try {
+          socketRef.current?.send("setup");
+        } catch (error) {
+          console.error(error);
+          setTimeout(sendMessage, 2000);
+        }
+      }
+      sendMessage();
+    };
+
+    socketRef.current.onmessage = function (event) {
+      let prefix = event.data.substring(0, 2);
+      let data = event.data.substring(2);
+      switch (prefix) {
+        case "q=":
+          let number = parseInt(data, 10);
+          setAgentData(() => {
+            const newAgentData = [];
+            for (let i = 1; i <= number; i++) {
+              newAgentData.push({
+                name_agent: `MAS_500PeasantFamily${i}`,
+                lands: [],
+              });
+            }
+            return newAgentData;
+          });
+          break;
+      }
+    };
+  };
+
+
+  useEffect(() => {
+    const connectWebSocket2 = () => {
+      const url = "ws://localhost:8000/wpsViewer";
+      socketRef.current = new WebSocket(url);
+  
+      socketRef.current.onerror = function (event) {
+        console.error("Error en la conexión a la dirección: " + url);
+        setTimeout(connectWebSocket, 2000);
+      };
+
+      socketRef.current.onmessage = function (event) {
+        let prefix = event.data.substring(0, 2);
+        let data = event.data.substring(2);
+        switch (prefix) {
+          case "j=":
+            try {
+              let jsonData = JSON.parse(data);
+              const { name, state } = jsonData;
+              const parsedState = JSON.parse(state);
+              if (agentData!==null){ 
+                const lands_number = parsedState.assignedLands.length;
+                //console.log(lands_number);
+                for (let i = 0; i < agentData.length; i++) {
+                  if (agentData[i].name_agent === name) {
+                    agentData[i].lands = [];
+                    for (let j = 0; j < lands_number; j++) {
+                      const land_name = parsedState.assignedLands[j].landName
+                      //tomar los primeros digitos hasta que encuentre el segundo _
+                      const land_name_short = land_name.split("_")[1];
+                      agentData[i].lands.push({
+                        name: "land_" + land_name_short,
+                        current_season: parsedState.assignedLands[j].currentSeason,
+                      });
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              console.error(error);
+            }
+            break;
+        }
+      };
+    };
+    connectWebSocket2();
+
+    //repetir cada 5 segundos
+    const interval = setInterval(() => {
+    const landNames: string[] = [];
+    const seasonNames: string[] = [];
+    agentData.forEach((agent) => {
+      agent.lands.forEach((land) => {
+        landNames.push(land.name);
+        seasonNames.push(land.current_season);
+      });
+    });
+    setSpecificLandNames(landNames);
+      setSpecificSeason(seasonNames);
+    }, 1000);
+  }, [agentData]);
+
+
+
   const renderPolygons = () => {
     return mapData
       .filter((finca) => filters.length === 0 || filters.includes(finca.kind))
       .map((fincaData, index) => {
         let fillColor;
-        switch (fincaData.kind) {
-          case "road":
-            fillColor = "#708090"; // Slate gray
-            break;
-          case "water":
-            fillColor = "#00B4D8"; // Bright blue
-            break;
-          case "forest":
-            fillColor = "#4CAF50"; // Vibrant green
-            break;
-          default:
-            fillColor = "#F5DEB3"; // Wheat (golden for unspecified cases)
+        if (specificLandNames.includes(fincaData.name)) {
+          switch (specificSeason[specificLandNames.indexOf(fincaData.name)]) {
+            case "PREPARATION":
+              fillColor = "#FFD700"; // Dorado
+              break;
+            case "PLANTING":
+              fillColor = "#FFA500"; // Naranja
+              break;
+            case "GROWTH":
+              fillColor = "#FF4500"; // Rojo
+              break;
+            case "HARVEST":
+              fillColor = "#00FF00"; // Verde brillante
+              break;
+          }
+        } else {
+          switch (fincaData.kind) {
+            case "road":
+              fillColor = "#708090"; // Coral
+              break;
+            case "water":
+              fillColor = "#00B4D8"; // Azul brillante
+              break;
+            case "forest":
+              fillColor = "#4CAF50"; // Verde vibrante
+              break;
+            case "land":
+              fillColor = "#F5DEB3"; // Color por defecto para "land"
+              break;
+            default:
+              fillColor = "#F5DEB3"; // Dorado (para casos no especificados)
+          }
         }
 
         const paths = fincaData.coordinates.map((coord) => ({
@@ -107,8 +256,8 @@ const SimulationMap: React.FC = () => {
             paths={paths}
             options={{
               fillColor: fillColor,
-              fillOpacity: 0.7,
-              strokeColor: "#000000",
+              fillOpacity: 0.7, // Ajusta la opacidad si es necesario
+              strokeColor: "#000000", // Color del borde
               strokeOpacity: 0.8,
               strokeWeight: 2,
             }}
@@ -127,9 +276,10 @@ const SimulationMap: React.FC = () => {
     setFilters((prev) => [...prev, filter]);
   };
 
+
   return (
     <div
-      className="w-[800px] h-[400px] shadow-lg rounded-md mx-auto my-4"
+      className="w-full h-full"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
