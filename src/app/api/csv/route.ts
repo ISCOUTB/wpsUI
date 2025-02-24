@@ -40,7 +40,37 @@ function calculateStatistics(data: any[], parameter: string) {
   return { avg, max, min, stdDev };
 }
 
+async function getAgents() {
+  if (!fs.existsSync(filePath)) {
+    return { error: "Archivo CSV no encontrado" };
+  }
+
+  const results: any[] = [];
+
+  return new Promise((resolve, reject) => {
+    fs.createReadStream(filePath)
+      .pipe(csvParser())
+      .on("data", (data) => {
+        results.push(data);
+      })
+      .on("end", () => {
+        const agents = Array.from(new Set(results.map((item) => item.Agent)));
+        resolve(agents);
+      })
+      .on("error", (error) => reject({ error: error.message }));
+  });
+}
+
 export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const parameter = url.searchParams.get("parameter");
+  const agent = url.searchParams.get("agent");
+
+  if (parameter === "Agent") {
+    const agents = await getAgents();
+    return NextResponse.json({ data: agents });
+  }
+
   if (!fs.existsSync(filePath)) {
     return NextResponse.json(
       { error: "Archivo CSV no encontrado" },
@@ -49,15 +79,12 @@ export async function GET(req: Request) {
   }
 
   const results: any[] = [];
-  const url = new URL(req.url);
-  const parameter = url.searchParams.get("parameter");
 
   return new Promise((resolve, reject) => {
     fs.createReadStream(filePath)
       .pipe(csvParser())
       .on("data", (data) => {
         if (data.internalCurrentDate) {
-          // Asegúrate de que se está transformando bien la fecha
           const formattedDate = moment(
             data.internalCurrentDate,
             "DD/MM/YYYY"
@@ -68,13 +95,16 @@ export async function GET(req: Request) {
 
         results.push(data);
       })
-
       .on("end", () => {
         if (!parameter) {
-          return resolve(NextResponse.json(results)); // ✅ Retorna todo si no hay parámetro
+          return resolve(NextResponse.json(results));
         }
 
-        const processedData = processCSVData(results, parameter);
+        const filteredResults = agent
+          ? results.filter((item) => item.Agent === agent)
+          : results;
+
+        const processedData = processCSVData(filteredResults, parameter);
         const stats = calculateStatistics(processedData, parameter);
 
         resolve(NextResponse.json({ data: processedData, stats }));

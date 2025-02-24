@@ -1,10 +1,9 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, PieChart } from "lucide-react";
 import { RangeChart } from "../rangechart";
 import {
   Select,
@@ -62,16 +61,36 @@ const parameters = {
   ],
 };
 
+const ALL_AGENTS = "ALL_AGENTS";
+
 const TabContent: React.FC = () => {
   const [selectedParameter, setSelectedParameter] = useState(
     parameters.boolean[0].key
   );
   const [selectedType, setSelectedType] = useState("boolean");
+  const [agents, setAgents] = useState<string[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<string>(ALL_AGENTS);
 
   const handleTypeChange = (type: string) => {
     setSelectedType(type);
     setSelectedParameter(parameters[type as keyof typeof parameters][0].key);
   };
+
+  const loadAgents = async () => {
+    try {
+      const response = await fetch(`/api/csv?parameter=Agent`);
+      if (!response.ok) throw new Error("Error obteniendo agentes");
+
+      const { data } = await response.json();
+      setAgents(data);
+    } catch (error) {
+      console.error("Error cargando agentes:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadAgents();
+  }, []);
 
   return (
     <Tabs defaultValue="overview" className="w-full h-full">
@@ -135,6 +154,25 @@ const TabContent: React.FC = () => {
                   </SelectGroup>
                 </SelectContent>
               </Select>
+              <Select
+                onValueChange={(value) => setSelectedAgent(value)}
+                value={selectedAgent}
+              >
+                <SelectTrigger className="w-[280px] bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)]">
+                  <SelectValue placeholder="Select an agent" />
+                </SelectTrigger>
+                <SelectContent className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)]">
+                  <SelectGroup>
+                    <SelectLabel>Agents</SelectLabel>
+                    <SelectItem value={ALL_AGENTS}>All Agents</SelectItem>
+                    {agents.map((agent) => (
+                      <SelectItem key={agent} value={agent}>
+                        {agent}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
           </CardHeader>
           <CardContent className="flex flex-col h-full p-4">
@@ -148,6 +186,7 @@ const TabContent: React.FC = () => {
                   )?.color || "#000000"
                 }
                 type={selectedType}
+                agent={selectedAgent === ALL_AGENTS ? null : selectedAgent}
               />
             </div>
           </CardContent>

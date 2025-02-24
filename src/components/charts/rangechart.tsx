@@ -72,12 +72,14 @@ interface RangeChartProps {
   parameter: string;
   color: string;
   type: string;
+  agent?: string;
 }
 
 export const RangeChart: React.FC<RangeChartProps> = ({
   parameter,
   color,
   type,
+  agent,
 }) => {
   const [data, setData] = useState<APIData[]>([]);
   const [processedData, setProcessedData] = useState<any[]>([]);
@@ -90,14 +92,17 @@ export const RangeChart: React.FC<RangeChartProps> = ({
 
   const loadData = async () => {
     try {
-      const response = await fetch(`/api/csv?parameter=${parameter}`);
+      const url = agent
+        ? `/api/csv?parameter=${parameter}&agent=${agent}`
+        : `/api/csv?parameter=${parameter}`;
+      const response = await fetch(url);
       if (!response.ok) throw new Error("Error obteniendo datos");
 
       const { data, stats } = await response.json();
       setProcessedData(data);
       setStatistics(stats);
     } catch (error) {
-      // Manejo del error según convenga
+      console.error("Error cargando datos:", error);
     }
   };
 
@@ -105,13 +110,13 @@ export const RangeChart: React.FC<RangeChartProps> = ({
     loadData();
     const interval = setInterval(loadData, 5000); // Actualiza cada 5 segundos
     return () => clearInterval(interval); // Limpia el intervalo al desmontar el componente
-  }, [parameter]);
+  }, [parameter, agent]);
 
   useEffect(() => {
     if (data.length > 0) {
       const processed = data.map((item) => ({
         date: item.date,
-        [parameter]: item.value,
+        [parameter]: parseFloat(item.value), // Asegúrate de que el valor sea un número
       }));
       setProcessedData(processed);
       setStatistics(calculateStatistics(data, parameter));
@@ -328,7 +333,7 @@ function calculateStatistics(
   parameter: string
 ): { avg: number; max: number; min: number; stdDev: number } {
   // Función de ejemplo para el cálculo de estadísticas
-  const values = data.map((item) => item.value);
+  const values = data.map((item) => parseFloat(item.value)); // Asegúrate de que el valor sea un número
   const avg = values.reduce((sum, v) => sum + v, 0) / values.length || 0;
   const max = Math.max(...values);
   const min = Math.min(...values);
