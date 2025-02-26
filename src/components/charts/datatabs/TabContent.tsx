@@ -94,22 +94,11 @@ const TabContent: React.FC = () => {
 
   return (
     <Tabs defaultValue="overview" className="w-full h-full">
-      {/* Lista de pestañas */}
-      <TabsList className="flex bg-[hsl(210,14%,11%)] rounded-full p-1 justify-center gap-2 w-full">
-        <TabsTrigger
-          value="overview"
-          className="rounded-full text-[hsl(0,0%,100%)] data-[state=active]:bg-[hsl(221.2,83.2%,53.3%)] data-[state=active]:text-[hsl(210,40%,98%)] transition-all text-center w-full py-1.5 text-lg"
-        >
-          Overview
-        </TabsTrigger>
-      </TabsList>
-
-      {/* Contenido de la pestaña "Overview" */}
+    
       <TabsContent value="overview" className="h-full">
-        {/* Se elimina el borde y sombra del Card con border-none y shadow-none */}
-        <Card className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)] rounded-3xl h-full border-none shadow-none">
+        <Card className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)] rounded-3xl h-full border">
           <CardHeader className="p-6">
-            <CardTitle className="text-2xl font-bold font-clash">
+            <CardTitle className="text-2xl font-clash bg-[#2664eb] text-white rounded-lg p-2 flex items-center justify-center">
               CSV Data Visualization
             </CardTitle>
             {/* Área de selección integrada en la cabecera */}
@@ -161,7 +150,7 @@ const TabContent: React.FC = () => {
                 <SelectTrigger className="w-[280px] bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)]">
                   <SelectValue placeholder="Select an agent" />
                 </SelectTrigger>
-                <SelectContent className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)]">
+                <SelectContent className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)] max-h-60 overflow-y-auto">
                   <SelectGroup>
                     <SelectLabel>Agents</SelectLabel>
                     <SelectItem value={ALL_AGENTS}>All Agents</SelectItem>

@@ -9,7 +9,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTheme } from "next-themes";
-import DarkTheme from "../darktheme";
 
 const Sidebar: React.FC = () => {
   const { theme, setTheme } = useTheme();
@@ -29,8 +28,8 @@ const Sidebar: React.FC = () => {
     <div className="bg-[#171c1f] text-foreground w-88 flex flex-col h-full">
       {/* Encabezado del sidebar */}
       <div className="p-4">
-        <h1 className="text-xl font-bold text-foreground">
-          Well Prod Simulation
+        <h1 className="text-2xl font-clash font-bold bg-[#2664eb] rounded-lg p-2 flex items-center justify-center">
+          WellProdSimulator 
         </h1>
       </div>
 
@@ -42,18 +41,12 @@ const Sidebar: React.FC = () => {
               <TooltipTrigger asChild>
                 <a
                   href={item.href}
-                  className="flex items-center py-2 px-3 text-foreground hover:bg-accent hover:text-[#3b82f6] rounded transition-colors"
+                  className="flex items-center py-2 px-3 text-foreground  hover:text-[#2664eb] rounded transition-colors font-clash text-white"
                 >
                   {item.icon}
                   <span className="ml-2">{item.label}</span>
                 </a>
               </TooltipTrigger>
-              <TooltipContent
-                side="right"
-                className="bg-popover text-popover-foreground"
-              >
-                {item.label}
-              </TooltipContent>
             </Tooltip>
           ))}
         </TooltipProvider>

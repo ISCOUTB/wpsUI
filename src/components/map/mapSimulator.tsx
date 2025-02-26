@@ -272,13 +272,13 @@ const SimulationMap: React.FC = () => {
 
   return (
     <div
-      className="w-full h-full"
+      className="w-full h-full flex justify-center items-center rounded-lg"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
       {isLoaded ? (
         <GoogleMap
-          mapContainerStyle={{ width: "100%", height: "100%" }}
+          mapContainerStyle={{ width: "850px", height: "580px" }}
           zoom={14}
           onLoad={onLoad}
           onUnmount={onUnmount}

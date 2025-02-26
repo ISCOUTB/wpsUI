@@ -3,17 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import path from "path";
 import { useRouter } from "next/navigation";
@@ -82,7 +71,10 @@ export default function SimulatorConfigPage() {
       emotions,
       years,
     };
-    return Object.entries(args).flatMap(([key, value]) => [`-${key}`, String(value)]);
+    return Object.entries(args).flatMap(([key, value]) => [
+      `-${key}`,
+      String(value),
+    ]);
   };
 
   const handleExecuteExe = async () => {
@@ -120,7 +112,7 @@ export default function SimulatorConfigPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          Simulator Configuration
+          WellProdSimulator Configuration
         </motion.h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
