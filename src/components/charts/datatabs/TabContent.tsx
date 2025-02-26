@@ -94,10 +94,9 @@ const TabContent: React.FC = () => {
 
   return (
     <Tabs defaultValue="overview" className="w-full h-full">
-    
       <TabsContent value="overview" className="h-full">
-        <Card className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)] rounded-3xl h-full border">
-          <CardHeader className="p-6">
+        <Card className="bg-[#181c20] text-[#ffffff] rounded-3xl h-full ">
+          <CardHeader className="p-2">
             <CardTitle className="text-2xl font-clash bg-[#2664eb] text-white rounded-lg p-2 flex items-center justify-center">
               CSV Data Visualization
             </CardTitle>
@@ -166,7 +165,7 @@ const TabContent: React.FC = () => {
           </CardHeader>
           <CardContent className="flex flex-col h-full p-4">
             {/* Sección de gráfica que ocupa el espacio restante, sin borde */}
-            <div className="flex-grow rounded-lg">
+            <div className="flex rounded-lg -translate-y-5 h-full">
               <RangeChart
                 parameter={selectedParameter}
                 color={

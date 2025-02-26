@@ -46,15 +46,15 @@ export default function MapSimulator() {
           </div>
           {/* Sección de Mapa de Simulación + Contenido de Pestañas */}
           <div className="w-full bg-[#181c20] rounded-lg shadow-md p-4 overflow-auto">
-            <div className="h-[600px] border rounded-3xl">
+            <div className="h-[450px] rounded-3xl">
               <SimulationMap />
 
               {/* Botón con WebSocket */}
               <ToggleButton />
 
-              <div className="mt-4">
+            
                 <TabContent />
-              </div>
+              
             </div>
           </div>
         </div>
