@@ -1,17 +1,4 @@
 export const parameters = {
-  boolean: [
-    {
-      key: "currentActivity",
-      color: "#FF6B6B",
-      description:
-        "Indica si el agente está realizando una actividad actualmente.",
-    },
-    {
-      key: "haveEmotions",
-      color: "#4ECDC4",
-      description: "Indica si el agente tiene emociones habilitadas.",
-    },
-  ],
   integer: [
     {
       key: "health",
@@ -125,63 +112,6 @@ export const parameters = {
       key: "waterAvailable",
       color: "#5D9CEC",
       description: "Cantidad de agua disponible para el agente.",
-    },
-  ],
-  string: [
-    {
-      key: "Timestamp",
-      color: "#A0D468",
-      description: "Marca de tiempo del evento.",
-    },
-    {
-      key: "purpose",
-      color: "#4FC1E9",
-      description: "Propósito actual del agente.",
-    },
-    {
-      key: "currentPeasantLeisureType",
-      color: "#FC6E51",
-      description: "Tipo de actividad de ocio actual del agente.",
-    },
-    {
-      key: "currentResourceNeededType",
-      color: "#48CFAD",
-      description: "Tipo de recurso que el agente necesita actualmente.",
-    },
-    {
-      key: "internalCurrentDate",
-      color: "#AC92EC",
-      description: "Fecha actual en la simulación.",
-    },
-    {
-      key: "peasantKind",
-      color: "#ED5565",
-      description: "Tipo de campesino que es el agente.",
-    },
-    {
-      key: "peasantFamilyLandAlias",
-      color: "#FFCE54",
-      description: "Alias de la tierra de la familia campesina.",
-    },
-    {
-      key: "farm",
-      color: "#EC87C0",
-      description: "Estado actual de la granja del agente.",
-    },
-    {
-      key: "contractor",
-      color: "#5D9CEC",
-      description: "Contratista actual del agente.",
-    },
-    {
-      key: "Agent",
-      color: "#A0D468",
-      description: "Identificador único del agente.",
-    },
-    {
-      key: "peasantFamilyHelper",
-      color: "#FC6E51",
-      description: "Ayudante de la familia campesina del agente.",
     },
   ],
 } as const;

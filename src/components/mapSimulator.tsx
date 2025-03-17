@@ -5,7 +5,6 @@ import Sidebar from "@/components/Sidebar/sidebar";
 import SimulationMap from "@/components/map/mapSimulator";
 import TabContent from "@/components/charts/datatabs/TabContent";
 import FarmInfoComponent from "./farmInfoComponents";
-import { ThemeProvider } from "next-themes";
 import { Button } from "./ui/button";
 import { RefreshCw, StopCircle } from "lucide-react";
 
@@ -33,32 +32,28 @@ const ToggleButton = () => {
 
 export default function MapSimulator() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <div className="flex h-screen bg-[#111418] text-[#ffffff] font-archivo">
-        <Sidebar />
-        <div className="flex-1 flex flex-col md:flex-row gap-4 p-4">
-          {/* Sección de Información de la Finca */}
-          <div className="w-full md:w-2/5 bg-[#181c20] rounded-lg shadow-md p-4">
-            <h2 className="text-xl font-bold font-clash mb-4 text-center text-white bg-[#2664eb] rounded-lg p-2">
-              Farm Information
-            </h2>
-            <FarmInfoComponent />
-          </div>
-          {/* Sección de Mapa de Simulación + Contenido de Pestañas */}
-          <div className="w-full bg-[#181c20] rounded-lg shadow-md p-4 overflow-auto">
-            <div className="h-[450px] rounded-3xl">
-              <SimulationMap />
+    <div className="flex h-screen bg-[#111418] text-[#ffffff] font-archivo">
+      <Sidebar />
+      <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 relative ">
+        {/* Sección de Información de la Finca */}
+        <div className="w-full md:w-2/5 bg-[#181c20] rounded-lg shadow-md p-4 scrollbar-hide overflow-auto">
+          <h2 className="text-2xl font-bold font-clash mb-4 text-center text-white bg-[#2664eb] rounded-lg p-2">
+            Farm Information
+          </h2>
+          <FarmInfoComponent />
+        </div>
+        {/* Sección de Mapa de Simulación + Contenido de Pestañas */}
+        <div className="w-full bg-[#181c20] rounded-lg shadow-md p-4">
+          <div className="h-[450px] rounded-3xl">
+            <SimulationMap />
 
-              {/* Botón con WebSocket */}
-              <ToggleButton />
+            {/* Botón con WebSocket */}
+            <ToggleButton />
 
-            
-                <TabContent />
-              
-            </div>
+            <TabContent />
           </div>
         </div>
       </div>
-    </ThemeProvider>
+    </div>
   );
 }

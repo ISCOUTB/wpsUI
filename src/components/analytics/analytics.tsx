@@ -21,7 +21,7 @@ import Barchart from "@/components/charts/datatabs/barchart";
 import "./styles/analytics.css";
 
 export default function Analytics() {
-  const [selectedType, setSelectedType] = useState<ParameterType>("boolean");
+  const [selectedType, setSelectedType] = useState<ParameterType>("integer");
   const [selectedParameter, setSelectedParameter] = useState("currentActivity");
   const [activeSection, setActiveSection] = useState("parameter");
   const router = useRouter();

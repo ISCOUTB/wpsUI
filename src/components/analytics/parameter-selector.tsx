@@ -1,11 +1,17 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { parameters, type ParameterType } from "@/lib/parameter-config"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { parameters, type ParameterType } from "@/lib/parameter-config";
 
 interface ParameterSelectorProps {
-  selectedType: ParameterType
-  selectedParameter: string
-  onTypeChange: (type: string) => void
-  onParameterChange: (parameter: string) => void
+  selectedType: ParameterType;
+  selectedParameter: string;
+  onTypeChange: (type: string) => void;
+  onParameterChange: (parameter: string) => void;
 }
 
 export function ParameterSelector({
@@ -21,8 +27,8 @@ export function ParameterSelector({
           <SelectValue placeholder="Seleccionar tipo" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="integer">Entero</SelectItem>
-          <SelectItem value="float">Flotante</SelectItem>
+          <SelectItem value="integer">Integer</SelectItem>
+          <SelectItem value="float">Float</SelectItem>
         </SelectContent>
       </Select>
       <Select onValueChange={onParameterChange} value={selectedParameter}>
@@ -38,6 +44,5 @@ export function ParameterSelector({
         </SelectContent>
       </Select>
     </div>
-  )
+  );
 }
-

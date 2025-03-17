@@ -116,7 +116,7 @@ export const RangeChart: React.FC<RangeChartProps> = ({
     if (data.length > 0) {
       const processed = data.map((item) => ({
         date: item.date,
-        [parameter]: parseFloat(item.value), // Asegúrate de que el valor sea un número
+        [parameter]: item.value, // Asegúrate de que el valor sea un número
       }));
       setProcessedData(processed);
       setStatistics(calculateStatistics(data, parameter));
@@ -333,7 +333,7 @@ function calculateStatistics(
   parameter: string
 ): { avg: number; max: number; min: number; stdDev: number } {
   // Función de ejemplo para el cálculo de estadísticas
-  const values = data.map((item) => parseFloat(item.value)); // Asegúrate de que el valor sea un número
+  const values = data.map((item) => item.value); // Asegúrate de que el valor sea un número
   const avg = values.reduce((sum, v) => sum + v, 0) / values.length || 0;
   const max = Math.max(...values);
   const min = Math.min(...values);

@@ -16,10 +16,7 @@ import {
 } from "@/components/ui/select";
 
 const parameters = {
-  boolean: [
-    { key: "currentActivity", color: "#FF6B6B" },
-    { key: "haveEmotions", color: "#4ECDC4" },
-  ],
+  
   integer: [
     { key: "health", color: "#45B7D1" },
     { key: "currentSeason", color: "#F7B731" },
@@ -46,28 +43,16 @@ const parameters = {
     { key: "peasantFriendsAffinity", color: "#8CC152" },
     { key: "waterAvailable", color: "#5D9CEC" },
   ],
-  string: [
-    { key: "Timestamp", color: "#A0D468" },
-    { key: "purpose", color: "#4FC1E9" },
-    { key: "currentPeasantLeisureType", color: "#FC6E51" },
-    { key: "currentResourceNeededType", color: "#48CFAD" },
-    { key: "internalCurrentDate", color: "#AC92EC" },
-    { key: "peasantKind", color: "#ED5565" },
-    { key: "peasantFamilyLandAlias", color: "#FFCE54" },
-    { key: "farm", color: "#EC87C0" },
-    { key: "contractor", color: "#5D9CEC" },
-    { key: "Agent", color: "#A0D468" },
-    { key: "peasantFamilyHelper", color: "#FC6E51" },
-  ],
+ 
 };
 
 const ALL_AGENTS = "ALL_AGENTS";
 
 const TabContent: React.FC = () => {
   const [selectedParameter, setSelectedParameter] = useState(
-    parameters.boolean[0].key
+    parameters.integer[0].key
   );
-  const [selectedType, setSelectedType] = useState("boolean");
+  const [selectedType, setSelectedType] = useState("integer");
   const [agents, setAgents] = useState<string[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string>(ALL_AGENTS);
 
@@ -109,10 +94,8 @@ const TabContent: React.FC = () => {
                 <SelectContent className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)]">
                   <SelectGroup>
                     <SelectLabel>Parameter Types</SelectLabel>
-                    <SelectItem value="boolean">Boolean</SelectItem>
                     <SelectItem value="integer">Integer</SelectItem>
                     <SelectItem value="float">Float</SelectItem>
-                    <SelectItem value="string">String</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>

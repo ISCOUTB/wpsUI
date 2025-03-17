@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Coins, Calendar, Sprout, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 
 interface FarmInfo {
   id: string;
@@ -20,16 +20,17 @@ const initialData: FarmInfo[] = [];
 export default function FarmInfoComponent() {
   const socketRef = useRef<WebSocket | null>(null);
   const [farmData, setFarmData] = useState<FarmInfo[]>(initialData);
+  const [selectedFarm, setSelectedFarm] = useState<string | null>(null);
 
   const connectWebSocket = () => {
     const url = "ws://localhost:8000/wpsViewer";
     socketRef.current = new WebSocket(url);
 
-    socketRef.current.onerror = function (event) {
+    socketRef.current.onerror = (event) => {
       setTimeout(connectWebSocket, 2000);
     };
 
-    socketRef.current.onopen = function (event) {
+    socketRef.current.onopen = (event) => {
       function sendMessage() {
         try {
           socketRef.current?.send("setup");
@@ -40,13 +41,13 @@ export default function FarmInfoComponent() {
       sendMessage();
     };
 
-    socketRef.current.onmessage = function (event) {
-      let prefix = event.data.substring(0, 2);
-      let data = event.data.substring(2);
+    socketRef.current.onmessage = (event) => {
+      const prefix = event.data.substring(0, 2);
+      const data = event.data.substring(2);
       switch (prefix) {
         case "j=":
           try {
-            let jsonData = JSON.parse(data);
+            const jsonData = JSON.parse(data);
             const { name, state } = jsonData;
             const parsedState = JSON.parse(state);
 
@@ -67,7 +68,7 @@ export default function FarmInfoComponent() {
           } catch (error) {}
           break;
         case "q=":
-          let number = parseInt(data, 10);
+          const number = Number.parseInt(data, 10);
           setFarmData(() => {
             const newFarmData = [];
             for (let i = 1; i <= number; i++) {
@@ -106,58 +107,132 @@ export default function FarmInfoComponent() {
     };
   }, []);
 
+  // Get expression based on health
+  const getExpression = (health: number) => {
+    const healthPercentage = Math.min(100, Math.max(0, health));
+    if (healthPercentage > 75) return "😄";
+    if (healthPercentage > 50) return "🙂";
+    if (healthPercentage > 25) return "😐";
+    return "😟";
+  };
+
+  // Get avatar color based on health
+  const getAvatarColor = (health: number) => {
+    const healthPercentage = Math.min(100, Math.max(0, health));
+    if (healthPercentage > 75) return "bg-green-500";
+    if (healthPercentage > 50) return "bg-yellow-500";
+    if (healthPercentage > 25) return "bg-orange-500";
+    return "bg-red-500";
+  };
+
   return (
-    <ScrollArea className="h-[calc(100vh-4rem)] w-full p-2 sm:p-4">
-      <AnimatePresence>
-        {farmData.map((info) => (
-          <motion.div
-            key={info.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5 }}
-            className="mb-2 sm:mb-4"
-          >
-            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300">
-              <CardHeader className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white p-3 sm:p-4">
-                <CardTitle className="flex items-center justify-between text-sm sm:text-base">
-                  <span className="flex items-center gap-2">
-                    <Users className="w-4 h-4 sm:w-5 sm:h-5" />
-                    {info.id}
-                  </span>
-                  <span className="bg-emerald-700/50 px-2 py-1 rounded text-xs sm:text-sm">
-                    {info.count} 👥
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
-                <div className="flex items-center gap-2 text-red-500 text-sm sm:text-base">
-                  <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="font-semibold">{info.life.toFixed(2)}</span>
+    <div className="h-[calc(100vh-4rem)] flex flex-col relative overflow-hidden">
+      {/* Date display at the top */}
+      {farmData.length > 0 && farmData[0].date && (
+        <div className="bg-[#111418] text-white p-2 text-center sticky top-0 z-10 rounded-lg">
+          <div className="flex items-center justify-center gap-2">
+            <Calendar className="w-4 h-4" />
+            <span className="font-medium">{farmData[0].date}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Main content area with scroll */}
+      <ScrollArea className="flex-1 px-4 py-2 overflow-auto">
+        <div className="max-w-2xl mx-auto space-y-4">
+          <AnimatePresence>
+            {farmData.map((info) => (
+              <motion.div
+                key={info.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className={`bg-[#111418] rounded-lg border shadow-sm overflow-hidden ${
+                  selectedFarm === info.id
+                    ? "border-emerald-500"
+                    : "border-transparent"
+                }`}
+                onClick={() =>
+                  setSelectedFarm(info.id === selectedFarm ? null : info.id)
+                }
+              >
+                <div className="flex items-center p-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white">
+                  <div
+                    className={`w-12 h-12 rounded-full ${getAvatarColor(info.life)} flex items-center justify-center text-2xl mr-3 border-2 border-white`}
+                  >
+                    {getExpression(info.life)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold truncate">{info.id}</h3>
+                    <div className="grid grid-cols-3 gap-2 mt-1 text-xs">
+                      <div className="flex items-center gap-1">
+                        <Heart className="w-3 h-3" />
+                        <span>{info.life.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Coins className="w-3 h-3" />
+                        <span>${info.amount.toFixed(0)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Sprout className="w-3 h-3" />
+                        <span className="truncate">{info.farmId || "—"}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-yellow-600 text-sm sm:text-base">
-                  <Coins className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="font-semibold">
-                    ${" "}
-                    {info.amount.toLocaleString("es-ES", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </span>
+
+                <div className="p-3">
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="flex items-center gap-1 text-red-600">
+                        <Heart className="w-4 h-4" /> Health
+                      </span>
+                      <span>{info.life.toFixed(1)}</span>
+                    </div>
+                    <Progress value={info.life} className="h-2" />
+                  </div>
+
+                  {selectedFarm === info.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-3 pt-2 border-t border-gray-100"
+                    >
+                      <div className="flex items-center gap-2 text-amber-600">
+                        <Coins className="w-4 h-4" />
+                        <div className="flex-1">Wealth</div>
+                        <div className="font-medium">
+                          ${" "}
+                          {info.amount.toLocaleString("es-ES", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-green-600">
+                        <Sprout className="w-4 h-4" />
+                        <div className="flex-1">Farm</div>
+                        <div className="font-medium truncate max-w-[200px]">
+                          {info.farmId || "Unassigned"}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-blue-600">
+                        <Users className="w-4 h-4" />
+                        <div className="flex-1">Population</div>
+                        <div className="font-medium">{info.count}</div>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 text-blue-500 text-sm sm:text-base">
-                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>{info.date}</span>
-                </div>
-                <div className="flex items-center gap-2 text-green-600 text-sm sm:text-base">
-                  <Sprout className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>{info.farmId}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </ScrollArea>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </ScrollArea>
+    </div>
   );
 }
