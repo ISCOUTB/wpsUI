@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   send: (channel, args) => {
     ipcRenderer.send(channel, args);
   },
+  killJavaProcess: () => ipcRenderer.invoke("kill-java-process"),
 
   getAppPath: () => ipcRenderer.invoke("get-app-path"),
 });

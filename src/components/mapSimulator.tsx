@@ -9,27 +9,30 @@ import { Button } from "./ui/button";
 import { RefreshCw, StopCircle } from "lucide-react";
 
 const ToggleButton = () => {
-  const [isStop, setIsStop] = useState(false);
+  const handleButtonClick = async () => {
+    try {
+      const result = await window.electronAPI.killJavaProcess();
+      if (result.success) {
+        console.log("Proceso Java detenido correctamente");
+      } else {
+        console.error("Error al detener el proceso:", result.message || result.error);
+      }
+    } catch (error) {
+      console.error("Error al detener el proceso Java:", error);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center space-x-4 mt-4">
-      <Button className="flex items-center space-x-2 text-white bg-[#2664eb] hover:bg-[#1e4bbf] font-clash font-bold">
-        {isStop ? (
-          <>
-            <RefreshCw className="w-8 h-8 font-clash" />
-            <span>Reiniciar</span>
-          </>
-        ) : (
-          <>
-            <StopCircle className="w-8 h-8 font-clash" />
-            <span>Stop</span>
-          </>
-        )}
+      <Button 
+        onClick={handleButtonClick}
+        className="flex items-center space-x-2 text-white bg-[#2664eb] hover:bg-[#1e4bbf] font-clash font-bold">
+        <StopCircle className="w-8 h-8 font-clash" />
+        <span>Stop</span>
       </Button>
     </div>
   );
 };
-
 export default function MapSimulator() {
   return (
     <div className="flex h-screen bg-[#111418] text-[#ffffff] font-archivo overflow-hidden">

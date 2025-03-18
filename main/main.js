@@ -129,15 +129,21 @@ ipcMain.handle("file-exists", async (event, filePath) => {
   return fs.existsSync(filePath);
 });
 
-app.on("window-all-closed", () => {
+ipcMain.handle("kill-java-process", async () => {
   if (javaProcess) {
-    if (app.isPackaged) {
-      execFile("taskkill", ["/pid", javaProcess.pid, "/f", "/t"], () => {});
-    } else {
-      exec("taskkill /IM java.exe /F", () => {});
+    try {
+      if (app.isPackaged) {
+        execFile("taskkill", ["/pid", javaProcess.pid, "/f", "/t"], () => {});
+      } else {
+        exec("taskkill /IM java.exe /F", () => {});
+      }
+      // Resetear la referencia al proceso
+      javaProcess = null;
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
     }
-  }
-  if (process.platform !== "darwin") {
-    app.quit();
+  } else {
+    return { success: false, message: "No hay proceso Java activo" };
   }
 });
