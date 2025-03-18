@@ -32,7 +32,7 @@ const ToggleButton = () => {
 
 export default function MapSimulator() {
   return (
-    <div className="flex h-screen bg-[#111418] text-[#ffffff] font-archivo">
+    <div className="flex h-screen bg-[#111418] text-[#ffffff] font-archivo overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 relative ">
         {/* Sección de Información de la Finca */}
@@ -43,7 +43,7 @@ export default function MapSimulator() {
           <FarmInfoComponent />
         </div>
         {/* Sección de Mapa de Simulación + Contenido de Pestañas */}
-        <div className="w-full bg-[#181c20] rounded-lg shadow-md p-4">
+        <div className="w-full bg-[#181c20] rounded-lg shadow-md p-4 overflow-auto">
           <div className="h-[450px] rounded-3xl">
             <SimulationMap />
 
