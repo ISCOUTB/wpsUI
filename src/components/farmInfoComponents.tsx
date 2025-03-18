@@ -204,7 +204,7 @@ export default function FarmInfoComponent() {
 
                             <div className="flex items-center gap-2 text-blue-600">
                               <Users className="w-4 h-4" />
-                              <div className="flex-1">Population</div>
+                              <div className="flex-1">Tools</div>
                               <div className="font-medium">{info.count}</div>
                             </div>
                           </motion.div>
