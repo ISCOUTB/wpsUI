@@ -147,3 +147,23 @@ ipcMain.handle("kill-java-process", async () => {
     return { success: false, message: "No hay proceso Java activo" };
   }
 });
+
+// Agregar este manejador para cerrar el proceso Java cuando se cierra la aplicación
+app.on("window-all-closed", () => {
+  if (javaProcess) {
+    try {
+      if (app.isPackaged) {
+        execFile("taskkill", ["/pid", javaProcess.pid, "/f", "/t"], () => {});
+      } else {
+        exec("taskkill /IM java.exe /F", () => {});
+      }
+      javaProcess = null;
+    } catch (error) {
+      console.error("Error al cerrar proceso Java:", error);
+    }
+  }
+  
+  if (process.platform !== "darwin") {
+    app.quit();
+  }
+});
