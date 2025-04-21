@@ -278,10 +278,13 @@ const SimulationMap: React.FC = () => {
     >
       {isLoaded ? (
         <GoogleMap
-          mapContainerStyle={{ width: "850px", height: "400px", borderRadius: "30px", border: "2px solid #ffff" }}
-          
-
-          zoom={14}
+          mapContainerStyle={{
+            width: "850px",
+            height: "400px",
+            borderRadius: "30px",
+            border: "2px solid #ffff",
+          }}
+          zoom={14.2}
           onLoad={onLoad}
           onUnmount={onUnmount}
           options={{

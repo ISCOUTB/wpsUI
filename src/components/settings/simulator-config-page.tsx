@@ -32,7 +32,7 @@ interface ConfigOptionProps {
 
 const ConfigOption = ({ title, description, children }: ConfigOptionProps) => (
   <motion.div
-    className="bg-[hsl(210,14%,11%)] text-[hsl(0,0%,100%)] p-6 rounded-lg shadow-none border border-[hsl(214,14%,18%)]"
+    className="bg-[#181c20] text-[#ffffff] p-6 rounded-lg shadow-none border border-[#272d34]"
     whileHover={{ scale: 1.02 }}
     transition={{ type: "spring", stiffness: 300 }}
   >
@@ -103,10 +103,10 @@ export default function SimulatorConfigPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(214,17%,8%)] text-[hsl(0,0%,100%)] py-12 px-4 sm:px-6 lg:px-8 font-archivo">
+    <div className="min-h-screen bg-[#111418] text-[#ffffff] py-12 px-4 sm:px-6 lg:px-8 font-archivo">
       <div className="max-w-6xl mx-auto">
         <motion.h1
-          className="text-4xl font-extrabold text-center mb-12 text-[hsl(0,0%,100%)] font-clash p-4 rounded-lg "
+          className="text-4xl font-extrabold text-center mb-12 text-[#ffffff] font-clash p-4 rounded-lg "
           style={{ backgroundColor: "#004d66" }}
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
