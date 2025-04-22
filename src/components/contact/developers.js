@@ -28,9 +28,9 @@ export const developers = [
   {
     name: "Samuel Tobio",
     role: "Frontend",
-    image: "/developers/mauricio-donado.jpeg",
-    github: "https://github.com/DonadoM",
-    email: "donadom@utb.edu.co",
+    image: "/developers/samuel-tobio.jpeg",
+    github: "https://github.com/Stobio19",
+    email: "stobio@utb.edu.co",
     color: "#EF4444",
 
   }

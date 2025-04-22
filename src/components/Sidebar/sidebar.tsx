@@ -22,7 +22,7 @@ const Sidebar: React.FC = () => {
       href: "/pages/analytics",
     },
     { icon: <Settings size={20} />, label: "Settings", href: "/#" },
-    { icon: <Mail size={20} />, label: "Contact Us", href: "#" },
+    { icon: <Mail size={20} />, label: "Contact Us", href: "/pages/contact" },
   ];
 
   return (
