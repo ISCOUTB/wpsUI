@@ -1,7 +1,6 @@
 "use client";
 
-import type React from "react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RangeChart } from "../rangechart";
@@ -16,64 +15,65 @@ import {
 } from "@/components/ui/select";
 
 const parameters = {
-  
-  integer: [
-    { key: "health", color: "#45B7D1" },
-    { key: "currentSeason", color: "#F7B731" },
-    { key: "robberyAccount", color: "#5D9CEC" },
-    { key: "currentDay", color: "#AC92EC" },
-    { key: "toPay", color: "#EC87C0" },
-    { key: "peasantFamilyMinimalVital", color: "#5D9CEC" },
-    { key: "loanAmountToPay", color: "#48CFAD" },
-    { key: "tools", color: "#A0D468" },
-    { key: "seeds", color: "#ED5565" },
-    { key: "pesticidesAvailable", color: "#FC6E51" },
-    { key: "HarvestedWeight", color: "#FFCE54" },
-    { key: "totalHarvestedWeight", color: "#CCD1D9" },
-    { key: "daysToWorkForOther", color: "#4FC1E9" },
-    { key: "Emotion", color: "#37BC9B" },
-  ],
-  float: [
-    { key: "HappinessSadness", color: "#DA4453" },
-    { key: "HopefulUncertainty", color: "#967ADC" },
-    { key: "SecureInsecure", color: "#D770AD" },
-    { key: "money", color: "#656D78" },
-    { key: "peasantFamilyAffinity", color: "#AAB2BD" },
-    { key: "peasantLeisureAffinity", color: "#E9573F" },
-    { key: "peasantFriendsAffinity", color: "#8CC152" },
-    { key: "waterAvailable", color: "#5D9CEC" },
-  ],
- 
+  integer: [] as { key: string; color: string }[],
+  float: [] as { key: string; color: string }[],
 };
 
 const ALL_AGENTS = "ALL_AGENTS";
 
 const TabContent: React.FC = () => {
-  const [selectedParameter, setSelectedParameter] = useState(
-    parameters.integer[0].key
-  );
+  const [selectedParameter, setSelectedParameter] = useState("");
   const [selectedType, setSelectedType] = useState("integer");
   const [agents, setAgents] = useState<string[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string>(ALL_AGENTS);
 
   const handleTypeChange = (type: string) => {
     setSelectedType(type);
-    setSelectedParameter(parameters[type as keyof typeof parameters][0].key);
+    const firstParameter = parameters[type as keyof typeof parameters][0]?.key;
+    setSelectedParameter(firstParameter || "");
   };
 
   const loadAgents = async () => {
     try {
-      const response = await fetch(`/api/csv?parameter=Agent`);
-      if (!response.ok) throw new Error("Error obteniendo agentes");
+      const response = await window.electronAPI.readCsv();
+      if (!response.success || !response.data) throw new Error(response.error);
 
-      const { data } = await response.json();
-      setAgents(data);
+      const rows = response.data.split("\n").filter((line) => line.trim() !== "");
+      const headers = rows[0].split(",");
+      const agentIndex = headers.indexOf("Agent");
+
+      if (agentIndex === -1) throw new Error("No se encontró la columna 'Agent'");
+
+      const agentsSet = new Set(
+        rows.slice(1).map((row) => row.split(",")[agentIndex])
+      );
+      setAgents(Array.from(agentsSet));
     } catch (error) {
       console.error("Error cargando agentes:", error);
     }
   };
 
+  const loadParameters = async () => {
+    try {
+      const response = await window.electronAPI.readCsv();
+      if (!response.success || !response.data) throw new Error(response.error);
+
+      const rows = response.data.split("\n").filter((line) => line.trim() !== "");
+      const headers = rows[0].split(",");
+
+      parameters.integer = headers.map((key) => ({ key, color: "#45B7D1" }));
+      parameters.float = headers.map((key) => ({ key, color: "#DA4453" }));
+
+      // Selecciona el primer parámetro válido
+      const firstParameter = parameters[selectedType as keyof typeof parameters][0]?.key;
+      setSelectedParameter(firstParameter || "");
+    } catch (error) {
+      console.error("Error cargando parámetros:", error);
+    }
+  };
+
   useEffect(() => {
+    loadParameters();
     loadAgents();
   }, []);
 

@@ -111,16 +111,19 @@ ipcMain.handle("clear-csv", async () => {
 
 ipcMain.handle("read-csv", async () => {
   try {
-    const csvPath = path.join(
-      app.getAppPath(),
-      "/src/wps/logs/wpsSimulator.csv"
-    );
+    const csvPath = path.join(app.getAppPath(), "/src/wps/logs/wpsSimulator.csv");
     if (!fs.existsSync(csvPath)) {
+      console.error("Archivo CSV no encontrado:", csvPath);
       return { success: false, error: "Archivo no encontrado" };
     }
     const data = fs.readFileSync(csvPath, "utf-8");
+    if (!data.trim()) {
+      console.error("Archivo CSV vacío:", csvPath);
+      return { success: false, error: "Archivo CSV vacío" };
+    }
     return { success: true, data };
   } catch (error) {
+    console.error("Error leyendo el archivo CSV:", error);
     return { success: false, error: error.message };
   }
 });
