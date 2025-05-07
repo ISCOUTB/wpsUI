@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import Papa from "papaparse";
 
+export const dynamic = "force-dynamic"; // Fuerza que esta ruta sea dinámica
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const parameter = url.searchParams.get("parameter");
@@ -13,7 +15,6 @@ export async function GET(req: Request) {
   }
 
   try {
-    // Usar la función de Electron para leer el archivo CSV
     const response = await window.electronAPI.readCsv();
     if (!response.success || !response.data) {
       throw new Error(response.error || "Error al leer el archivo CSV");
