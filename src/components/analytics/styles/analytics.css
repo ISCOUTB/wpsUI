@@ -1,145 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap");
-@import url("https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap");
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  :root {
-    --background: 214 17% 8%;
-    --foreground: 0 0% 100%;
-
-    --card: 210 14% 11%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 210 14% 11%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 14% 15%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 210 14% 15%;
-    --muted-foreground: 217.9 10.6% 64.9%;
-
-    --accent: 210 14% 15%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214 14% 18%;
-    --input: 214 14% 18%;
-    --ring: 221.2 83.2% 53.3%;
-
-    --radius: 0.5rem;
-  }
+/* Estilos base para el dashboard de analítica */
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
 }
 
-.font-clash {
-  font-family: "Clash Display", sans-serif;
-}
-
-.font-archivo {
-  font-family: "Archivo", sans-serif;
-}
-
-.analytics-container {
-  @apply min-h-screen bg-[#0f1417] text-foreground transition-all duration-300 ease-in-out font-archivo;
-}
-
-.analytics-card {
-  @apply bg-[#171c1f] text-card-foreground shadow-lg transition-all duration-300;
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius);
-}
-
-.analytics-header {
-  @apply space-y-1.5 p-6;
-}
-
-.analytics-title {
-  @apply text-2xl font-semibold tracking-tight font-clash;
-  color: hsl(var(--foreground));
-}
-
-.analytics-description {
-  @apply text-sm text-muted-foreground font-archivo;
-}
-
-.analytics-content {
-  @apply p-6 pt-0;
-}
-
-.analytics-navigation {
-  @apply space-y-4 transition-all duration-300;
-}
-
-.analytics-section {
-  @apply space-y-6 animate-in fade-in-50 duration-300;
-}
-
-.analytics-welcome {
-  @apply space-y-4 max-w-prose;
-}
-
-.analytics-welcome h2 {
-  @apply font-clash;
-}
-
-.analytics-welcome p {
-  @apply text-muted-foreground leading-relaxed font-archivo;
-}
-
-.analytics-button {
-  @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-archivo;
-}
-
-.analytics-parameter {
-  @apply space-y-6;
-}
-
-.analytics-parameter h2 {
-  @apply font-clash;
-}
-
-.analytics-chart-container {
-  @apply mt-6 rounded-lg border bg-[#171c1f] p-4;
-  border-color: hsl(var(--border));
-}
-
-.analytics-agents {
-  @apply space-y-4;
-}
-
-.analytics-agents h2 {
-  @apply font-clash;
-}
-
-.analytics-agents p {
-  @apply text-muted-foreground leading-relaxed mb-6 font-archivo;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .analytics-layout {
-    @apply flex-col;
-  }
-
-  .analytics-sidebar {
-    @apply w-full pr-0 mb-6;
-  }
-
-  .analytics-content {
-    @apply p-4;
-  }
-}
-
-/* Animations */
-@keyframes slideIn {
+@keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -150,44 +14,188 @@
   }
 }
 
-.slide-in {
-  animation: slideIn 0.3s ease-out forwards;
+/* Transiciones suaves para mejorar la experiencia de usuario */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
 }
 
-/* Interactive elements */
-.interactive-hover {
-  @apply transition-all duration-200 ease-in-out;
-}
-
-.interactive-hover:hover {
-  @apply -translate-y-0.5;
-}
-
-/* Custom scrollbar */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-
+/* Estilos para scrollbar personalizado */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
 }
 
-/* Loading states */
-.loading-skeleton {
-  @apply animate-pulse bg-[#171c1f] rounded;
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
-/* Focus states */
-.focus-ring {
-  @apply focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-offset-[#0f1417];
+/* Diseño responsivo para el dashboard */
+@media (max-width: 768px) {
+  .analytics-sidebar {
+    position: fixed;
+    z-index: 50;
+    height: 100vh;
+    left: 0;
+    top: 0;
+  }
+  
+  .analytics-sidebar.closed {
+    transform: translateX(-100%);
+  }
+  
+  .analytics-sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+/* Efectos de enfoque para elementos interactivos */
+.focus-ring:focus {
+  outline: 2px solid hsl(var(--primary) / 0.5);
+  outline-offset: 2px;
+}
+
+/* Card enriquecidas para mejor visualización de datos */
+.data-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.data-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para gráficos y visualizaciones */
+.chart-container {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Estilos para tablas de datos */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.data-table th {
+  font-weight: 500;
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Animaciones para elementos de interfaz */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Tooltip personalizado */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip:hover .tooltip-content {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-content {
+  visibility: hidden;
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px 12px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  width: max-content;
+  max-width: 300px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Diseño de tarjetas para estadísticas */
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  background-color: hsl(var(--card));
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+}
+
+.stat-card-title {
+  font-size: 14px;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 4px;
+}
+
+.stat-card-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.stat-card-description {
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+  margin-top: 8px;
+}
+
+/* Estilos para contenedores de gráficos responsivos */
+.chart-responsive-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 60%; /* Proporción de aspecto del gráfico */
+}
+
+.chart-responsive-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
