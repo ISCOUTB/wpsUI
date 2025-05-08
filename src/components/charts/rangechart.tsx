@@ -8,79 +8,56 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
-import { fetchCSVData, processCSVData, calculateStatistics } from "@/lib/csvUtils";
+import Papa from "papaparse";
 
 interface RangeChartProps {
   parameter: string;
   color: string;
-  type: "float" | "integer";
-  agent: string | null;
+  type: "float" | "integer"; // Agregar la propiedad 'type'
+  agent: string | null; // Agente seleccionado
 }
 
 export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type, agent }) => {
   const [data, setData] = useState<any[]>([]);
-  const [statistics, setStatistics] = useState({
-    avg: 0,
-    max: 0,
-    min: 0,
-    stdDev: 0,
-  });
-  const [fallback, setFallback] = useState(false); // Estado para manejar el fallback
-
-  // Datos de prueba en caso de error
-  const fallbackData = [
-    { date: "2023-01-01", value: 10 },
-    { date: "2023-01-02", value: 20 },
-    { date: "2023-01-03", value: 15 },
-    { date: "2023-01-04", value: 25 },
-    { date: "2023-01-05", value: 30 },
-  ];
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const rawData = await fetchCSVData();
-        console.log("Datos crudos del CSV:", rawData); // Log para depuración
+        const response = await window.electronAPI.readCsv();
+        if (!response.success || !response.data) throw new Error(response.error || "Error al leer el archivo CSV");
 
-        const processedData = processCSVData(rawData, parameter);
-        console.log("Datos procesados para la gráfica:", processedData); // Log para depuración
+        // Analizar el contenido del CSV con papaparse
+        Papa.parse(response.data, {
+          header: true,
+          complete: (results) => {
+            const filteredData = results.data
+              .filter((row: any) => row.internalCurrentDate) // Asegurarse de que la fecha exista
+              .filter((row: any) => !agent || row.Agent === agent) // Filtrar por agente si está seleccionado
+              .map((row: any) => ({
+                date: row.internalCurrentDate, // Usar siempre internalCurrentDate como eje X
+                value: parseFloat(row[parameter]), // Filtrar por el parámetro seleccionado
+              }))
+              .filter((row) => !isNaN(row.value)); // Filtrar valores no numéricos
 
-        setData(processedData);
-        setStatistics(calculateStatistics(processedData));
+            setData(filteredData);
+          },
+          error: (error: Error) => { // Especificar el tipo de 'error'
+            console.error("Error al analizar el archivo CSV:", error);
+          },
+        });
       } catch (error) {
-        console.error("Error al cargar los datos del CSV:", error);
-        setFallback(true); // Activar el fallback si ocurre un error
-        setData(fallbackData); // Usar datos de prueba
-        setStatistics(calculateStatistics(fallbackData)); // Calcular estadísticas con datos de prueba
+        console.error("Error al cargar los datos:", error);
       }
     };
 
     loadData();
-  }, [parameter, agent]);
 
-  if (fallback) {
-    // Renderizar un gráfico nativo como alternativa
-    return (
-      <div>
-        <h3>Gráfico alternativo</h3>
-        <svg width="100%" height="400">
-          <rect width="100%" height="100%" fill="#f0f0f0" />
-          {data.map((point, index) => (
-            <circle
-              key={index}
-              cx={`${(index / data.length) * 100}%`}
-              cy={`${(1 - point.value / statistics.max) * 100}%`}
-              r="5"
-              fill={color}
-            />
-          ))}
-        </svg>
-      </div>
-    );
-  }
+    // Actualización en tiempo real cada 5 segundos
+    const interval = setInterval(loadData, 2000);
+    return () => clearInterval(interval); // Limpiar el intervalo al desmontar el componente
+  }, [parameter, agent]);
 
   return (
     <ResponsiveContainer width="100%" height={400}>
@@ -91,21 +68,11 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type, 
             <stop offset="100%" stopColor={color} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" />
+        <CartesianGrid stroke="#2c2c2c" strokeDasharray="3 3" /> {/* Oscurecer cuadrículas */}
         <XAxis dataKey="date" />
         <YAxis />
         <Tooltip />
-        <ReferenceLine
-          y={statistics.avg}
-          stroke="red"
-          label={{ value: "Avg", position: "insideTopRight" }}
-        />
-        <Area
-          type="monotone"
-          dataKey="value"
-          stroke={color}
-          fill="url(#colorGradient)"
-        />
+        <Area type="monotone" dataKey="value" stroke={color} fill="url(#colorGradient)" />
       </AreaChart>
     </ResponsiveContainer>
   );

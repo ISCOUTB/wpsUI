@@ -111,19 +111,20 @@ ipcMain.handle("clear-csv", async () => {
 
 ipcMain.handle("read-csv", async () => {
   try {
-    // Ajustar la ruta relativa para apuntar correctamente a src/wps/logs/wpsSimulator.csv
-    const csvPath = path.join(__dirname, "../src/wps/logs/wpsSimulator.csv");
+    const basePath = app.isPackaged
+      ? path.join(app.getAppPath(), "../src/wps/logs/wpsSimulator.csv")
+      : path.join(__dirname, "../src/wps/logs/wpsSimulator.csv");
 
-    console.log("Ruta generada para el archivo CSV:", csvPath); // Log para depuración
+    console.log("Ruta generada para el archivo CSV:", basePath); // Log para depuración
 
-    if (!fs.existsSync(csvPath)) {
-      console.error("Archivo CSV no encontrado en la ruta:", csvPath);
+    if (!fs.existsSync(basePath)) {
+      console.error("Archivo CSV no encontrado en la ruta:", basePath);
       return { success: false, error: "Archivo no encontrado" };
     }
 
-    const data = fs.readFileSync(csvPath, "utf-8");
+    const data = fs.readFileSync(basePath, "utf-8");
     if (!data.trim()) {
-      console.error("Archivo CSV vacío en la ruta:", csvPath);
+      console.error("Archivo CSV vacío en la ruta:", basePath);
       return { success: false, error: "Archivo CSV vacío" };
     }
 
