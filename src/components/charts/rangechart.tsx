@@ -16,9 +16,11 @@ import { fetchCSVData, processCSVData, calculateStatistics } from "@/lib/csvUtil
 interface RangeChartProps {
   parameter: string;
   color: string;
+  type: "float" | "integer";
+  agent: string | null;
 }
 
-export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color }) => {
+export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type, agent }) => {
   const [data, setData] = useState<any[]>([]);
   const [statistics, setStatistics] = useState({
     avg: 0,
@@ -26,17 +28,59 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color }) => {
     min: 0,
     stdDev: 0,
   });
+  const [fallback, setFallback] = useState(false); // Estado para manejar el fallback
+
+  // Datos de prueba en caso de error
+  const fallbackData = [
+    { date: "2023-01-01", value: 10 },
+    { date: "2023-01-02", value: 20 },
+    { date: "2023-01-03", value: 15 },
+    { date: "2023-01-04", value: 25 },
+    { date: "2023-01-05", value: 30 },
+  ];
 
   useEffect(() => {
     const loadData = async () => {
-      const rawData = await fetchCSVData();
-      const processedData = processCSVData(rawData, parameter);
-      setData(processedData);
-      setStatistics(calculateStatistics(processedData));
+      try {
+        const rawData = await fetchCSVData();
+        console.log("Datos crudos del CSV:", rawData); // Log para depuración
+
+        const processedData = processCSVData(rawData, parameter);
+        console.log("Datos procesados para la gráfica:", processedData); // Log para depuración
+
+        setData(processedData);
+        setStatistics(calculateStatistics(processedData));
+      } catch (error) {
+        console.error("Error al cargar los datos del CSV:", error);
+        setFallback(true); // Activar el fallback si ocurre un error
+        setData(fallbackData); // Usar datos de prueba
+        setStatistics(calculateStatistics(fallbackData)); // Calcular estadísticas con datos de prueba
+      }
     };
 
     loadData();
-  }, [parameter]);
+  }, [parameter, agent]);
+
+  if (fallback) {
+    // Renderizar un gráfico nativo como alternativa
+    return (
+      <div>
+        <h3>Gráfico alternativo</h3>
+        <svg width="100%" height="400">
+          <rect width="100%" height="100%" fill="#f0f0f0" />
+          {data.map((point, index) => (
+            <circle
+              key={index}
+              cx={`${(index / data.length) * 100}%`}
+              cy={`${(1 - point.value / statistics.max) * 100}%`}
+              r="5"
+              fill={color}
+            />
+          ))}
+        </svg>
+      </div>
+    );
+  }
 
   return (
     <ResponsiveContainer width="100%" height={400}>

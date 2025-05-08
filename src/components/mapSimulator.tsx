@@ -13,7 +13,7 @@ const ToggleButton = () => {
       if (result.success) {
         console.log("Proceso Java detenido correctamente")
       } else {
-        console.error("Error al detener el proceso:", result.message || result.error)
+        console.error("Error al detener el proceso:", result.error)
       }
     } catch (error) {
       console.error("Error al detener el proceso Java:", error)

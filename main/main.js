@@ -111,16 +111,23 @@ ipcMain.handle("clear-csv", async () => {
 
 ipcMain.handle("read-csv", async () => {
   try {
-    const csvPath = path.join(app.getAppPath(), "/src/wps/logs/wpsSimulator.csv");
+    // Ajustar la ruta relativa para apuntar correctamente a src/wps/logs/wpsSimulator.csv
+    const csvPath = path.join(__dirname, "../src/wps/logs/wpsSimulator.csv");
+
+    console.log("Ruta generada para el archivo CSV:", csvPath); // Log para depuración
+
     if (!fs.existsSync(csvPath)) {
-      console.error("Archivo CSV no encontrado:", csvPath);
+      console.error("Archivo CSV no encontrado en la ruta:", csvPath);
       return { success: false, error: "Archivo no encontrado" };
     }
+
     const data = fs.readFileSync(csvPath, "utf-8");
     if (!data.trim()) {
-      console.error("Archivo CSV vacío:", csvPath);
+      console.error("Archivo CSV vacío en la ruta:", csvPath);
       return { success: false, error: "Archivo CSV vacío" };
     }
+
+    console.log("Datos leídos del archivo CSV:", data); // Log para verificar el contenido
     return { success: true, data };
   } catch (error) {
     console.error("Error leyendo el archivo CSV:", error);
@@ -165,7 +172,7 @@ app.on("window-all-closed", () => {
       console.error("Error al cerrar proceso Java:", error);
     }
   }
-  
+
   if (process.platform !== "darwin") {
     app.quit();
   }

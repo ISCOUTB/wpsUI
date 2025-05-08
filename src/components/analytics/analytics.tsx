@@ -24,6 +24,7 @@ export default function Analytics() {
   const [selectedType, setSelectedType] = useState<ParameterType>("integer");
   const [selectedParameter, setSelectedParameter] = useState("currentActivity");
   const [activeSection, setActiveSection] = useState("parameter");
+  const [selectedAgent, setSelectedAgent] = useState(null); // Add state for selectedAgent
   const router = useRouter();
 
   const handleTypeChange = (type: string) => {
@@ -103,6 +104,7 @@ export default function Analytics() {
                       <ParameterChart
                         selectedType={selectedType}
                         selectedParameter={selectedParameter}
+                        selectedAgent={selectedAgent || ""} // Asignar un valor predeterminado si es null
                       />
                     </div>
                   </div>

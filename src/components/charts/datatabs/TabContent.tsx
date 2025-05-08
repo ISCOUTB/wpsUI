@@ -156,7 +156,11 @@ const TabContent: React.FC = () => {
                     (p) => p.key === selectedParameter
                   )?.color || "#000000"
                 }
-                type={selectedType}
+                type={
+                  selectedType === "float" || selectedType === "integer"
+                    ? selectedType
+                    : "float" // Valor predeterminado en caso de que no coincida
+                }
                 agent={selectedAgent === ALL_AGENTS ? null : selectedAgent}
               />
             </div>

@@ -7,23 +7,6 @@ import { Input } from "@/components/ui/input";
 import path from "path";
 import { useRouter } from "next/navigation";
 
-declare global {
-  interface Window {
-    electronAPI: {
-      fileExists(csvPath: string): unknown;
-      deleteFile(csvPath: string): unknown;
-      readCsv(): unknown;
-      executeExe: (File: string, args: string[]) => Promise<string>;
-      getAppPath: () => Promise<string>;
-      clearCsv: () => Promise<{
-        success: boolean;
-        path?: string;
-        error?: string;
-      }>;
-    };
-  }
-}
-
 interface ConfigOptionProps {
   title: string;
   description: string;

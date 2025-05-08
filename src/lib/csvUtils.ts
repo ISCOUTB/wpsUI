@@ -12,11 +12,17 @@ export const fetchCSVData = async (): Promise<CSVData[]> => {
       throw new Error(response.error || "Error al leer el archivo CSV");
     }
 
+    console.log("Contenido del archivo CSV:", response.data); // Log para depuración
+
     return new Promise((resolve, reject) => {
+      if (!response.data) {
+        return reject(new Error("El archivo CSV está vacío o no se pudo leer."));
+      }
+
       Papa.parse(response.data, {
         header: true,
         complete: (results) => resolve(results.data as CSVData[]),
-        error: (error) => reject(error),
+        error: (error: Error) => reject(error), // Especificar el tipo de 'error'
       });
     });
   } catch (error) {
