@@ -2,7 +2,13 @@ import { Download } from "lucide-react";
 import moment from "moment";
 import Papa from "papaparse";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { fetchCSVData } from "@/lib/csvUtils";
 
 export function DownloadSection() {
@@ -15,7 +21,11 @@ export function DownloadSection() {
         return;
       }
 
-      const csv = Papa.unparse(data);
+      const headers = Object.keys(data[0]);
+      const csv = Papa.unparse({
+        fields: headers,
+        data: data,
+      });
 
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = window.URL.createObjectURL(blob);
@@ -41,7 +51,8 @@ export function DownloadSection() {
       <CardHeader>
         <CardTitle>Download Simulation Results</CardTitle>
         <CardDescription>
-          Download the complete simulation data in CSV format for more detailed analysis.
+          Download the complete simulation data in CSV format for more detailed
+          analysis.
         </CardDescription>
       </CardHeader>
       <CardContent>

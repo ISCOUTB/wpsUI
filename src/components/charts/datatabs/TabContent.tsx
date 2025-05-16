@@ -42,6 +42,8 @@ const floatVariables = [
   { key: "waterAvailable", color: "#5D9CEC" },
 ];
 
+export { floatVariables };
+
 const ALL_AGENTS = "ALL_AGENTS";
 
 const TabContent: React.FC = () => {

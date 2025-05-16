@@ -117,3 +117,14 @@ export const parameters = {
 } as const;
 
 export type ParameterType = keyof typeof parameters;
+
+export const predefinedFloatVariables = [
+  { key: "efficiency", label: "Efficiency" },
+  { key: "productivity", label: "Productivity" },
+  { key: "happiness", label: "Happiness" },
+  { key: "energy", label: "Energy" },
+  { key: "tasks", label: "Tasks Completed" },
+  { key: "agents", label: "Active Agents" },
+  { key: "errors", label: "Errors" },
+  { key: "interactions", label: "Interactions" },
+];
