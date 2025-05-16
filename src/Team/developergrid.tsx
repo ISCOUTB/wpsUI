@@ -1,5 +1,5 @@
 import DeveloperCard from "./developercard";
-import { developers } from "@/components/contact/developers";
+import { developers } from "@/Team/developers";
 import Sidebar from "@/components/Sidebar/sidebar";
 export default function DeveloperGrid() {
   const topRow = developers.slice(0, 3);

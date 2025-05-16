@@ -9,14 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import AnalyticsNavigation from "../analyticsnavigation";
-import { ParameterSelector } from "@/components/analytics/parameter-selector";
-import { ParameterChart } from "@/components/analytics/parameter-chart";
-import { DownloadSection } from "@/components/analytics/download-section";
+import AnalyticsNavigation from "./analyticsnavigation";
+import { ParameterSelector } from "@/components/analytics/parameters/parameter-selector";
+import { ParameterChart } from "@/components/analytics/parameters/parameter-chart";
+import { DownloadSection } from "@/components/analytics/downloadSection/download-section";
 import type { ParameterType } from "@/lib/parameter-config";
 import { parameters } from "@/lib/parameter-config";
 import { Button } from "@/components/ui/button";
-import AgentSearch from "../search/AgentSearch";
+import AgentSearch from "../map/search/AgentSearch";
 import Barchart from "@/components/charts/datatabs/barchart";
 import "./styles/analytics.css";
 
