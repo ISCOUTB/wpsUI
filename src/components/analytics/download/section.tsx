@@ -278,54 +278,56 @@ export function DownloadSection() {
 
     return (
       <div className="space-y-4 mt-6 slide-in">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium flex items-center font-clash">
-            <Eye className="mr-2 h-5 w-5 text-muted-foreground" />
-            Data Preview
-          </h3>
-          <Badge variant="outline" className="bg-secondary border-border">
-            Showing 5 rows
-          </Badge>
-        </div>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium flex items-center font-clash">
+        <Eye className="mr-2 h-5 w-5 text-muted-foreground" />
+        Data Preview
+        </h3>
+        <Badge variant="outline" className="bg-secondary border-border">
+        Showing 5 rows
+        </Badge>
+      </div>
 
-        <div className="border border-border rounded-md">
-          <ScrollArea className="h-[300px] custom-scrollbar">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-secondary/50">
-                  {columns.map((column) => (
-                    <TableHead
-                      key={column}
-                      className="whitespace-nowrap font-clash"
-                    >
-                      {column}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {previewData.map((row, rowIndex) => (
-                  <TableRow
-                    key={rowIndex}
-                    className="border-border hover:bg-secondary/30"
-                  >
-                    {columns.map((column) => (
-                      <TableCell
-                        key={`${rowIndex}-${column}`}
-                        className="whitespace-nowrap"
-                      >
-                        {formatValue(row[column])}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
+      <div className="border border-border rounded-md overflow-x-auto">
+        <div className="w-full min-w-max">
+        <ScrollArea className="h-[300px] custom-scrollbar ">
+          <Table>
+          <TableHeader>
+            <TableRow className="bg-secondary/50">
+            {columns.map((column) => (
+              <TableHead
+              key={column}
+              className="whitespace-nowrap font-clash"
+              >
+              {column}
+              </TableHead>
+            ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {previewData.map((row, rowIndex) => (
+            <TableRow
+              key={rowIndex}
+              className="border-border hover:bg-secondary/30"
+            >
+              {columns.map((column) => (
+              <TableCell
+                key={`${rowIndex}-${column}`}
+                className="whitespace-nowrap"
+              >
+                {formatValue(row[column])}
+              </TableCell>
+              ))}
+            </TableRow>
+            ))}
+          </TableBody>
+          </Table>
+        </ScrollArea>
         </div>
-        <p className="text-sm text-muted-foreground">
-          This preview shows the first 5 rows of the data to be downloaded.
-        </p>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        This preview shows the first 5 rows of the data to be downloaded.
+      </p>
       </div>
     );
   };

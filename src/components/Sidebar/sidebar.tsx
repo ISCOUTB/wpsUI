@@ -44,7 +44,7 @@ const Sidebar: React.FC = () => {
               <TooltipTrigger asChild>
                 <a
                   href={item.href}
-                  className="flex items-center py-2 px-3 text-foreground hover:text-[#2664eb] rounded transition-colors font-clash text-white"
+                  className="flex items-center py-8 px-4 text-foreground hover:text-[#2664eb] rounded transition-colors font-clash text-white"
                 >
                   {item.icon}
                   <span className="ml-2">{item.label}</span>

@@ -111,7 +111,7 @@ ipcMain.handle("clear-csv", async () => {
   try {
     const csvPath = path.join(
       app.getAppPath(),
-      "/src/wps/logs/wpsSimulator.csv"
+      "../src/wps/logs/wpsSimulator.csv"
     );
     fs.writeFileSync(csvPath, "");
     return { success: true, path: csvPath };
@@ -123,8 +123,8 @@ ipcMain.handle("clear-csv", async () => {
 ipcMain.handle("read-csv", async () => {
   try {
     const basePath = app.isPackaged
-      ? path.join(app.getAppPath(), "/src/wps/logs/wpsSimulator.csv")
-      : path.join(__dirname, "/src/wps/logs/wpsSimulator.csv");
+      ? path.join(app.getAppPath(), "../src/wps/logs/wpsSimulator.csv")
+      : path.join(__dirname, "../src/wps/logs/wpsSimulator.csv");
 
     console.log("Ruta generada para el archivo CSV:", basePath); // Log para depuración
 
