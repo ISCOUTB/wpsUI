@@ -64,11 +64,7 @@ const floatVariables = [
   { key: "daysToWorkForOther", color: "#4FC1E9" }
 ];
 
-const activityData = [
-  { name: "Working", value: 183 },
-  { name: "Idle", value: 42 },
-  { name: "Terminated", value: 22 },
-]
+
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"] // Colores para la gráfica de pastel
 
@@ -77,19 +73,19 @@ const navigationItems = [
   {
     id: "home",
     label: "Dashboard",
-    description: "Vista general de la simulación",
+    description: "Simulation overview",
     icon: <LayoutDashboard className="w-5 h-5" />,
   },
   {
     id: "statistics",
     label: "Statistics",
-    description: "Análisis estadístico avanzado",
+    description: "Advanced statistical analysis",
     icon: <Activity className="w-5 h-5" />,
   },
   {
     id: "agents",
     label: "Agents",
-    description: "Estado actual de los agentes",
+    description: "Current agent status",
     icon: <Users className="w-5 h-5" />,
   },
 
@@ -97,6 +93,12 @@ const navigationItems = [
 
 export default function Analytics() {
  
+// Agrega este nuevo estado
+const [activityData, setActivityData] = useState([
+  { name: "Working", value: 0 },
+  { name: "Idle", value: 0 },
+  { name: "Terminated", value: 0 },
+]);
 interface AgentState {
   peasantLeisureAffinity?: number;
   peasantFriendsAffinity?: number;
@@ -372,6 +374,69 @@ const getTaskType = (task: string): string => {
 };
 
 
+// Agrega esta función dentro del componente Analytics
+const calculateAgentActivitySummary = () => {
+  // Contadores para cada estado
+  let working = 0;
+  let idle = 0;
+  let terminated = 0;
+  
+  // Recorre todos los agentes cargados
+  loadedAgents.forEach(agentName => {
+    const agentInfo = agentTaskLogs[agentName] || {};
+    let agentStateData: AgentState = {};
+    
+    try {
+      if (agentInfo.state) {
+        if (typeof agentInfo.state === 'string') {
+          agentStateData = JSON.parse(agentInfo.state);
+        } else {
+          agentStateData = agentInfo.state;
+        }
+      }
+    } catch (error) {
+      console.error("Error parseando state para resumen:", error);
+    }
+    
+    // Determinar el estado del agente basado en sus datos
+    const health = agentStateData.health || 70;
+    const currentActivity = agentStateData.currentActivity || "";
+    
+    if (health < 20) {
+      terminated++;
+    } else if (
+      currentActivity.includes("IDLE") || 
+      currentActivity === "Unknown" || 
+      currentActivity === ""
+    ) {
+      idle++;
+    } else {
+      working++;
+    }
+  });
+  
+  // Actualizar el estado con los nuevos valores
+  setActivityData([
+    { name: "Working", value: working },
+    { name: "Idle", value: idle },
+    { name: "Terminated", value: terminated },
+  ]);
+};
+// Agregar este nuevo useEffect
+useEffect(() => {
+  // Calcular resumen de actividad inicial
+  calculateAgentActivitySummary();
+  
+  // Configurar intervalo para actualización periódica
+  const intervalId = setInterval(() => {
+    calculateAgentActivitySummary();
+  }, 2000); // Actualizar cada 2 segundos
+  
+  // Limpiar intervalo al desmontar
+  return () => {
+    clearInterval(intervalId);
+  };
+}, [agentTaskLogs, loadedAgents]); // Dependencias: actualizar cuando cambian los datos
 
 const [agentsData, setAgentsData] = useState<any[]>([]); // Add this line to define agentsData state
 const agentsLoadedRef = useRef<boolean>(false);
@@ -522,7 +587,7 @@ useEffect(() => {
 
   // Agrega esta función a tu componente
 const calculateTrend = (data: number[]): string => {
-  if (data.length < 2) return "Datos insuficientes";
+  if (data.length < 2) return "Insufficient data";
   
   const firstHalf = data.slice(0, Math.floor(data.length / 2));
   const secondHalf = data.slice(Math.floor(data.length / 2));
@@ -532,9 +597,9 @@ const calculateTrend = (data: number[]): string => {
   
   const percentChange = ((secondHalfMean - firstHalfMean) / firstHalfMean) * 100;
   
-  if (percentChange > 5) return `↑ +${percentChange.toFixed(1)}% (mejorando)`;
-  if (percentChange < -5) return `↓ ${percentChange.toFixed(1)}% (deteriorando)`;
-  return "Estable";
+  if (percentChange > 5) return `↑ +${percentChange.toFixed(1)}% (improving)`;
+  if (percentChange < -5) return `↓ ${percentChange.toFixed(1)}% (deteriorating)`;
+  return "Stable";
 }
 
 const calculateWellbeingIndex = (data: any[]): number => {
@@ -959,20 +1024,7 @@ const statistics = useMemo(() => {
           </nav>
         </div>
 
-        {/* Botón de "Ir al Simulador" */}
-        <div
-          className={`mt-auto p-4 border-t border-border transition-opacity duration-300 ${sidebarOpen ? "opacity-100" : "opacity-0"} dark:border-gray-700`}
-        >
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full flex items-center justify-center gap-2 dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
-            onClick={() => router.push("/pages/simulador")}
-          >
-            <Settings className="w-4 h-4" />
-            <span>Simulador</span>
-          </Button>
-        </div>
+       
       </div>
 
       {/* Contenido principal mejorado */}
@@ -988,17 +1040,24 @@ const statistics = useMemo(() => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="dark:text-gray-300 dark:hover:bg-gray-700">
-              <Info className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/pages/simulador")}
-              className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
-            >
-              Go to Simulator
-            </Button>
+  {/* Botón de icono Info */}
+<Button 
+  variant="ghost" 
+  size="icon" 
+  className="text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
+>
+  <Info className="h-5 w-5" />
+</Button>
+
+{/* Botón "Go to Simulator" */}
+<Button
+  variant="outline"
+  size="sm"
+  onClick={() => router.push("/pages/simulador")}
+  className="text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
+>
+  Go to Simulator
+</Button>
           </div>
         </header>
 
@@ -1021,7 +1080,7 @@ const statistics = useMemo(() => {
     {/* Tarjeta 1: Bienestar Emocional */}
     <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
       <div>
-        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Bienestar Emocional</p>
+        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Emotional Wellbeing</p>
         <h3 className="text-2xl font-bold dark:text-white truncate">
           {(() => {
             // Convertir de -1...1 a porcentaje 0...100
@@ -1040,7 +1099,7 @@ const statistics = useMemo(() => {
     {/* Tarjeta 2: Salud Económica */}
     <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
       <div>
-        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Salud Económica</p>
+        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Economic Health</p>
         <h3 className="text-2xl font-bold dark:text-white truncate">
           {(() => {
             // Extraer valores explícitamente
@@ -1061,14 +1120,14 @@ const statistics = useMemo(() => {
         </h3>
       </div>
       <p className="text-xs text-muted-foreground dark:text-gray-500 mt-2">
-        Relación entre ingresos y obligaciones financieras
+        Relationship between income and financial obligations
       </p>
     </div>
 
     {/* Tarjeta 3: Productividad Agrícola */}
     <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
       <div>
-        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Productividad Agrícola</p>
+        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Agricultural Productivity</p>
         <h3 className="text-2xl font-bold dark:text-white truncate">
           {(() => {
             // Extraer correctamente y verificar que hay datos
@@ -1090,7 +1149,7 @@ const statistics = useMemo(() => {
     {/* Tarjeta 4: Sostenibilidad de Recursos */}
     <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
       <div>
-        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Sostenibilidad</p>
+        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Sustainability</p>
         <h3 className="text-2xl font-bold dark:text-white truncate">
           {(() => {
             // Obtener el valor promedio de disponibilidad de agua
@@ -1109,7 +1168,7 @@ const statistics = useMemo(() => {
         </h3>
       </div>
       <p className="text-xs text-muted-foreground dark:text-gray-500 mt-2">
-        Disponibilidad de agua y recursos críticos
+        Availability of water and critical resources
       </p>
     </div>
   </div>
@@ -1518,23 +1577,23 @@ const statistics = useMemo(() => {
                           {/* Información de regresión (cuando está activada) */}
                               {showRegressionLine && (
                                 <div className="mt-4 bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-                                  <h4 className="text-md font-medium mb-3 dark:text-white">Análisis de Regresión</h4>
+                                  <h4 className="text-md font-medium mb-3 dark:text-white">Regression Analysis</h4>
                                   <div className="grid grid-cols-3 gap-4">
                                     <div>
-                                      <p className="text-xs text-muted-foreground dark:text-gray-400">Ecuación</p>
+                                      <p className="text-xs text-muted-foreground dark:text-gray-400">Equation</p>
                                       <p className="text-sm font-medium dark:text-white">
                                         y = {statistics.regression.slope.toFixed(4)}x + {statistics.regression.intercept.toFixed(4)}
                                       </p>
                                     </div>
                                     <div>
-                                      <p className="text-xs text-muted-foreground dark:text-gray-400">Valor R²</p>
+                                      <p className="text-xs text-muted-foreground dark:text-gray-400">R² Value</p>
                                       <p className="text-sm font-medium dark:text-white">{statistics.regression.r2.toFixed(4)}</p>
                                     </div>
                                     <div>
-                                      <p className="text-xs text-muted-foreground dark:text-gray-400">Significancia</p>
+                                      <p className="text-xs text-muted-foreground dark:text-gray-400">Significance</p>
                                       <p className="text-sm font-medium dark:text-white">
-                                        {statistics.regression.r2 > 0.7 ? "Fuerte" : 
-                                        statistics.regression.r2 > 0.3 ? "Moderada" : "Débil"}
+                                        {statistics.regression.r2 > 0.7 ? "Strong" : 
+                                        statistics.regression.r2 > 0.3 ? "Moderate" : "Weak"}
                                       </p>
                                     </div>
                                   </div>
@@ -1544,14 +1603,14 @@ const statistics = useMemo(() => {
                               {/* Información de outliers (cuando están excluidos) */}
                               {!showOutliers && (statistics.outliers.primaryCount > 0 || statistics.outliers.secondaryCount > 0) && (
                                 <div className="mt-4 bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-                                  <h4 className="text-md font-medium mb-3 dark:text-white">Outliers Excluidos</h4>
+                                  <h4 className="text-md font-medium mb-3 dark:text-white">Excluded Outliers</h4>
                                   <div className="grid grid-cols-2 gap-4">
                                     <div>
                                       <p className="text-xs text-muted-foreground dark:text-gray-400">
                                         {availableVariables.find((v) => v.value === primaryVariable)?.label}
                                       </p>
                                       <p className="text-sm font-medium dark:text-white">
-                                        {statistics.outliers.primaryCount} outliers excluidos
+                                        {statistics.outliers.primaryCount} Excluded Outliers
                                       </p>
                                     </div>
                                     <div>
@@ -1707,175 +1766,192 @@ const statistics = useMemo(() => {
             )}
 
             {/* Agents Section */}
-            {activeSection === "agents" && (
-              <div className="animate-fadeIn space-y-6">
-                {selectedAgent ? (
-                  <AgentDetailView
-                    agentId={selectedAgent}
-                    agentData={selectedAgentData}
-                    onBack={() => setSelectedAgent(null)}
-                    averageEfficiency={averageEfficiency}
-                  />
-                ) : (
-                  <Card className="dark:bg-gray-800 dark:border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="dark:text-white">Agent Management</CardTitle>
-                      <CardDescription className="dark:text-gray-400">
-                        View and analyze individual agent status and behavior
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div>
-                        <h3 className="text-lg font-medium mb-4 dark:text-white">Agent Activity Summary</h3>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          {/* Stats */}
-                          <div className="bg-muted/40 p-4 rounded-lg dark:bg-gray-700/40 md:col-span-1">
-                            <div className="grid md:grid-cols-3 gap-4">
-                              <div className="md:col-span-3">
-                                <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                                  Agent Status Distribution
-                                </p>
-                              </div>
-                              <div className="md:col-span-1">
-                                <p className="text-sm text-muted-foreground dark:text-gray-400">Active</p>
-                                <h3 className="text-2xl font-bold dark:text-white">
-                                  {activityData.find((d) => d.name === "Working")?.value || 0}
-                                </h3>
-                                <p className="text-xs text-muted-foreground mt-1 dark:text-gray-500">
-                                  {/* Calcula el porcentaje si es posible */}
-                                  {(
-                                    ((activityData.find((d) => d.name === "Working")?.value || 0) /
-                                      activityData.reduce((sum, d) => sum + d.value, 0)) *
-                                    100
-                                  ).toFixed(0)}
-                                  % of total
-                                </p>
-                              </div>
-                              <div className="md:col-span-1">
-                                <p className="text-sm text-muted-foreground dark:text-gray-400">Idle</p>
-                                <h3 className="text-2xl font-bold dark:text-white">
-                                  {activityData.find((d) => d.name === "Idle")?.value || 0}
-                                </h3>
-                                <p className="text-xs text-muted-foreground mt-1 dark:text-gray-500">
-                                  {(
-                                    ((activityData.find((d) => d.name === "Idle")?.value || 0) /
-                                      activityData.reduce((sum, d) => sum + d.value, 0)) *
-                                    100
-                                  ).toFixed(0)}
-                                  % of total
-                                </p>
-                              </div>
-                              <div className="md:col-span-1">
-                                <p className="text-sm text-muted-foreground dark:text-gray-400">Terminated</p>
-                                <h3 className="text-2xl font-bold dark:text-white">
-                                  {activityData.find((d) => d.name === "Terminated")?.value || 0}
-                                </h3>
-                                <p className="text-xs text-muted-foreground mt-1 dark:text-gray-500">
-                                  {(
-                                    ((activityData.find((d) => d.name === "Terminated")?.value || 0) /
-                                      activityData.reduce((sum, d) => sum + d.value, 0)) *
-                                    100
-                                  ).toFixed(0)}
-                                  % of total
-                                </p>
-                              </div>
-                            </div>
+{activeSection === "agents" && (
+  <div className="animate-fadeIn space-y-6">
+    {selectedAgent ? (
+      <AgentDetailView
+        agentId={selectedAgent}
+        agentData={getAgentData(selectedAgent)}
+        onBack={() => setSelectedAgent(null)}
+        averageEfficiency={averageEfficiency}
+      />
+    ) : (
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle className="dark:text-white">Agent Management</CardTitle>
+          <CardDescription className="dark:text-gray-400">
+            View and analyze individual agent status and behavior
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <h3 className="text-lg font-medium mb-4 dark:text-white">Agent Activity Summary</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Stats */}
+              <div className="bg-muted/40 p-4 rounded-lg dark:bg-gray-700/40 md:col-span-1">
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="md:col-span-3">
+                    <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">
+                      Agent Status Distribution
+                    </p>
+                  </div>
+                  <div className="md:col-span-1">
+                    <p className="text-sm text-muted-foreground dark:text-gray-400">Active</p>
+                    <h3 className="text-2xl font-bold dark:text-white">
+                      {activityData.find((d) => d.name === "Working")?.value || 0}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1 dark:text-gray-500">
+                      {/* Cálculo de porcentaje con manejo de división por cero */}
+                      {activityData.reduce((sum, d) => sum + d.value, 0) > 0 ? 
+                        ((activityData.find((d) => d.name === "Working")?.value || 0) / 
+                         activityData.reduce((sum, d) => sum + d.value, 0) * 100).toFixed(0) : 
+                        0}% of total
+                    </p>
+                  </div>
+                  <div className="md:col-span-1">
+                    <p className="text-sm text-muted-foreground dark:text-gray-400">Idle</p>
+                    <h3 className="text-2xl font-bold dark:text-white">
+                      {activityData.find((d) => d.name === "Idle")?.value || 0}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1 dark:text-gray-500">
+                      {activityData.reduce((sum, d) => sum + d.value, 0) > 0 ? 
+                        ((activityData.find((d) => d.name === "Idle")?.value || 0) / 
+                         activityData.reduce((sum, d) => sum + d.value, 0) * 100).toFixed(0) : 
+                        0}% of total
+                    </p>
+                  </div>
+                  <div className="md:col-span-1">
+                    <p className="text-sm text-muted-foreground dark:text-gray-400">Terminated</p>
+                    <h3 className="text-2xl font-bold dark:text-white">
+                      {activityData.find((d) => d.name === "Terminated")?.value || 0}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1 dark:text-gray-500">
+                      {activityData.reduce((sum, d) => sum + d.value, 0) > 0 ? 
+                        ((activityData.find((d) => d.name === "Terminated")?.value || 0) / 
+                         activityData.reduce((sum, d) => sum + d.value, 0) * 100).toFixed(0) : 
+                        0}% of total
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Pie Chart */}
+              <div className="bg-muted/40 p-4 rounded-lg dark:bg-gray-700/40 md:col-span-1">
+                <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">
+                  Agent Status Visualization
+                </p>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={activityData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {activityData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#333",
+                          border: "none",
+                          color: "#fff",
+                        }}
+                        labelStyle={{ color: "#ddd" }}
+                        itemStyle={{ color: "#fff" }}
+                      />
+                      <Legend wrapperStyle={{ color: "#ccc" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Agent List */}
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-4 dark:text-white">Available Agents</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {loadedAgents.length === 0 ? (
+                <p className="text-muted-foreground dark:text-gray-400 col-span-3">Loading agents...</p>
+              ) : (
+                loadedAgents.map((agentName, index) => {
+                  // Extraer datos del agente desde el WebSocket
+                  const agentInfo = agentTaskLogs[agentName] || {};
+                  let agentStatus = "Active";
+                  
+                  try {
+                    // Determinar el estado basado en los datos del agente
+                    let agentStateData: AgentState = {};
+                    if (agentInfo.state) {
+                      if (typeof agentInfo.state === 'string') {
+                        agentStateData = JSON.parse(agentInfo.state);
+                      } else {
+                        agentStateData = agentInfo.state;
+                      }
+                    }
+                    
+                    const health = agentStateData.health || 70;
+                    agentStatus = health < 30 ? "Critical" : health < 60 ? "Struggling" : "Active";
+                  } catch (error) {
+                    console.error("Error procesando estado del agente:", error);
+                  }
+                  
+                  return (
+                    <Card
+                      key={agentName}
+                      className="dark:bg-gray-800 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => {
+                        setSelectedAgent(`${index + 1}`);
+                      }}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-3">
+                          <div className={`h-10 w-10 rounded-full flex items-center justify-center 
+                            ${agentStatus === "Active" ? "dark:bg-green-900/30" : 
+                              agentStatus === "Struggling" ? "dark:bg-yellow-900/30" : "dark:bg-red-900/30"}`}>
+                            <Users className={`h-5 w-5 
+                              ${agentStatus === "Active" ? "text-green-500" : 
+                                agentStatus === "Struggling" ? "text-yellow-500" : "text-red-500"}`} />
                           </div>
-                          {/* Pie Chart */}
-                          <div className="bg-muted/40 p-4 rounded-lg dark:bg-gray-700/40 md:col-span-1">
-                            <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                              Agent Status Visualization
-                            </p>
-                            <div className="h-64 w-full">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                  <Pie
-                                    data={activityData}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    outerRadius={80}
-                                    dataKey="value"
-                                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                  >
-                                    {activityData.map((entry, index) => (
-                                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                  </Pie>
-                                  <Tooltip
-                                    contentStyle={{
-                                      backgroundColor: "#333",
-                                      border: "none",
-                                      color: "#fff",
-                                    }}
-                                    labelStyle={{ color: "#ddd" }}
-                                    itemStyle={{ color: "#fff" }}
-                                  />
-                                  <Legend wrapperStyle={{ color: "#ccc" }} />
-                                </PieChart>
-                              </ResponsiveContainer>
+                          <div>
+                            <h4 className="font-medium dark:text-white">Familia {index + 1}</h4>
+                            <div className="flex items-center">
+                              <span className={`w-2 h-2 rounded-full mr-2
+                                ${agentStatus === "Active" ? "bg-green-500" : 
+                                  agentStatus === "Struggling" ? "bg-yellow-500" : "bg-red-500"}`}></span>
+                              <p className="text-xs text-muted-foreground dark:text-gray-400">
+                                {agentName}
+                              </p>
                             </div>
                           </div>
                         </div>
-                      </div>
-
-                    {/* Agent List */}
-                    <div className="mt-6">
-                      <h3 className="text-lg font-medium mb-4 dark:text-white">Agentes Disponibles</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {agentsData.length === 0 ? (
-                          <p className="text-muted-foreground dark:text-gray-400 col-span-3">Cargando agentes...</p>
-                        ) : (
-                          agentsData.map((agent, index) => {
-                            // Extraer datos del CSV o usar valores predeterminados
-                            const agentName = agent.id;
-                            const familyNumber = index + 1;
-                            
-                            return (
-                              <Card
-                                key={agent.id}
-                                className="dark:bg-gray-800 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
-                                onClick={() => {
-                                  setSelectedAgent(`${familyNumber}`);
-                                  setSelectedAgentData(getAgentData(`${familyNumber}`));
-                                }}
-                              >
-                                <CardContent className="p-4">
-                                  <div className="flex items-center space-x-3">
-                                    <div className="h-10 w-10 rounded-full flex items-center justify-center dark:bg-blue-900/30">
-                                      <Users className="h-5 w-5 text-green-500" />
-                                    </div>
-                                    <div>
-                                      <h4 className="font-medium dark:text-white">Familia {familyNumber}</h4>
-                                      <div className="flex items-center">
-                                        <span className="w-2 h-2 rounded-full text-green-500 mr-2"></span>
-                                        <p className="text-xs text-muted-foreground dark:text-gray-400">
-                                          {agentName}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                    </CardContent>
-                    <CardFooter className="border-t border-border pt-4 flex justify-between dark:border-gray-700">
-                      <Button
-                        variant="outline"
-                        onClick={() => setActiveSection("statistics")}
-                        className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
-                      >
-                        Back to statistics
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                )}
-              </div>
-            )}
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="border-t border-border pt-4 flex justify-between dark:border-gray-700">
+          <Button
+            variant="outline"
+            onClick={() => setActiveSection("statistics")}
+            className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
+          >
+            Back to statistics
+          </Button>
+        </CardFooter>
+      </Card>
+    )}
+  </div>
+)}
           </div>
         </main>
       </div>

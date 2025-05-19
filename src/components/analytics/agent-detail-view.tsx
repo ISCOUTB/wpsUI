@@ -33,7 +33,7 @@ interface AgentDetailViewProps {
 
 export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency }: AgentDetailViewProps) {
   if (!agentData) {
-    return <div>Cargando datos del agente...</div>
+    return <div>Loading agent data...</div>
   }
 
   // Función para determinar el color del badge según el tipo de actividad
@@ -60,22 +60,21 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
 
   return (
     <div className="space-y-6">
-      {/* Botón de regreso */}
-      <Button
-        variant="outline"
-        onClick={onBack}
-        className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
-      >
-        <ChevronRight className="mr-2 h-4 w-4 rotate-180" />
-        Volver a la lista de agentes
-      </Button>
+          <Button
+      variant="outline"
+      onClick={onBack}
+      className="text-white dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
+    >
+      <ChevronRight className="mr-2 h-4 w-4 rotate-180" />
+      Back to agent list
+    </Button>
 
       {/* Tarjeta principal de información del agente */}
       <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold dark:text-white">Familia {agentId}</h2>
+              <h2 className="text-2xl font-bold dark:text-white">Family {agentId}</h2>
               <p className="text-muted-foreground dark:text-gray-400">{agentData.name || `Agent #${agentId}`}</p>
             </div>
             <Badge className={`
@@ -93,23 +92,23 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
           {/* Información general */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-              <h3 className="text-lg font-medium mb-3 dark:text-white">Información General</h3>
+              <h3 className="text-lg font-medium mb-3 dark:text-white">General Information</h3>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground dark:text-gray-400">Actividad Actual</p>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400">Current Activity</p>
                   <p className="text-md dark:text-white">{agentData.currentActivity || "Unknown"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground dark:text-gray-400">Salud</p>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400">Health</p>
                   <p className="text-md dark:text-white">{agentData.metrics?.efficiency || 0}%</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground dark:text-gray-400">Dinero</p>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400">Money</p>
                   <p className="text-md dark:text-white">${agentData.metrics?.money?.toLocaleString() || 0}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground dark:text-gray-400">Bienestar</p>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400">Wellbeing</p>
                   <p className="text-md dark:text-white">{agentData.metrics?.happiness?.toFixed(1) || 0}%</p>
                 </div>
               </div>
@@ -118,7 +117,7 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
             {/* Tierras */}
             {agentData.lands && agentData.lands.length > 0 && (
               <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-                <h3 className="text-lg font-medium mb-3 dark:text-white">Tierras</h3>
+                <h3 className="text-lg font-medium mb-3 dark:text-white">Lands</h3>
                 <div className="space-y-3">
                   {agentData.lands.map((land: any, index: number) => (
                     <div key={index} className="bg-card border border-border rounded-lg p-3 dark:bg-gray-800/60 dark:border-gray-700">
@@ -128,12 +127,12 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
                           land.currentSeason === "GROWING" ? "success" : 
                           land.currentSeason === "PLANTING" ? "warning" : "secondary"
                         }>
-                          {land.currentSeason === "NONE" ? "Sin Cultivar" : land.currentSeason}
+                          {land.currentSeason === "NONE" ? "Uncultivated" : land.currentSeason}
                         </Badge>
                       </div>
                       {land.cropName && (
                         <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
-                          Cultivo: {land.cropName}
+                          Crop: {land.cropName}
                         </p>
                       )}
                       <div className="mt-2 w-full bg-muted/30 h-2 rounded-full overflow-hidden dark:bg-gray-700">
@@ -143,7 +142,7 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
                         ></div>
                       </div>
                       <p className="text-xs text-muted-foreground dark:text-gray-500 mt-1">
-                        Progreso: {Math.floor((land.elapsedWorkTime / land.totalRequiredTime) * 100)}%
+                        Progress: {Math.floor((land.elapsedWorkTime / land.totalRequiredTime) * 100)}%
                       </p>
                     </div>
                   ))}
@@ -156,7 +155,7 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Performance History */}
             <div className="bg-card border border-border rounded-lg p-6 dark:bg-gray-800 dark:border-gray-700">
-              <h3 className="text-lg font-medium mb-3 dark:text-white">Historial de Rendimiento</h3>
+              <h3 className="text-lg font-medium mb-3 dark:text-white">Performance History</h3>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={agentData.performanceHistory} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -172,8 +171,8 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
                       }}
                     />
                     <Legend wrapperStyle={{ color: "#ccc" }} />
-                    <Line type="monotone" dataKey="efficiency" stroke="#8884d8" name="Salud" />
-                    <Line type="monotone" dataKey="productivity" stroke="#82ca9d" name="Productividad" />
+                    <Line type="monotone" dataKey="efficiency" stroke="#8884d8" name="Health" />
+                    <Line type="monotone" dataKey="productivity" stroke="#82ca9d" name="Productivity" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -181,7 +180,7 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
 
             {/* Activity Distribution */}
             <div className="bg-card border border-border rounded-lg p-6 dark:bg-gray-800 dark:border-gray-700">
-              <h3 className="text-lg font-medium mb-3 dark:text-white">Distribución de Actividades</h3>
+              <h3 className="text-lg font-medium mb-3 dark:text-white">Activity Distribution</h3>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -216,7 +215,7 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
 
               {/* Activity Log */}
       <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-        <h3 className="text-lg font-medium mb-3 dark:text-white">Registro de Actividades</h3>
+        <h3 className="text-lg font-medium mb-3 dark:text-white">Activity Log</h3>
         <ScrollArea className="h-[280px] pr-4">
           <div className="space-y-3">
             {agentData.activityLog && agentData.activityLog.length > 0 ? (
@@ -240,7 +239,7 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
               ))
             ) : (
               <p className="text-sm text-muted-foreground dark:text-gray-400">
-                No hay actividades registradas para este agente.
+                No activities recorded for this agent.
               </p>
             )}
           </div>
@@ -249,14 +248,14 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
 
           {/* Analysis */}
           <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-            <h3 className="text-lg font-medium mb-3 dark:text-white">Análisis</h3>
+            <h3 className="text-lg font-medium mb-3 dark:text-white">Analysis</h3>
             <ul className="list-disc pl-5 space-y-1 dark:text-gray-300">
               {agentData.analysis && agentData.analysis.length > 0 ? (
                 agentData.analysis.map((item: string, index: number) => (
                   <li key={index}>{item}</li>
                 ))
               ) : (
-                <li>No hay análisis disponible para este agente.</li>
+                <li>No analysis available for this agent.</li>
               )}
             </ul>
           </div>
@@ -264,7 +263,7 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
           {/* Social Metrics */}
           {agentData.interactionInsights && agentData.interactionInsights.length > 0 && (
             <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-              <h3 className="text-lg font-medium mb-3 dark:text-white">Métricas Sociales</h3>
+              <h3 className="text-lg font-medium mb-3 dark:text-white">Social Metrics</h3>
               <ul className="space-y-2">
                 {agentData.interactionInsights.map((insight: string, index: number) => (
                   <li key={index} className="text-sm dark:text-gray-300">
@@ -281,7 +280,7 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
             onClick={onBack}
             className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
           >
-            Cerrar
+            Close
           </Button>
         </CardFooter>
       </Card>

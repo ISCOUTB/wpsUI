@@ -36,7 +36,18 @@ const createWindow = () => {
     show: true,
   });
 
-  splash.loadFile(path.join(__dirname, "splash.html"));
+ // Determinar la ubicación del archivo splash.html
+let splashPath;
+if (app.isPackaged) {
+  // En producción
+  splashPath = path.join(__dirname, "splash.html");
+} else {
+  // En desarrollo
+  splashPath = path.join(__dirname, "../main/splash.html");
+}
+
+console.log("Ruta del splash:", splashPath); // Útil para depuración
+splash.loadFile(splashPath);
 
   // Crear la ventana principal
   mainWindow = new BrowserWindow({
@@ -100,7 +111,7 @@ ipcMain.handle("clear-csv", async () => {
   try {
     const csvPath = path.join(
       app.getAppPath(),
-      "../src/wps/logs/wpsSimulator.csv"
+      "/src/wps/logs/wpsSimulator.csv"
     );
     fs.writeFileSync(csvPath, "");
     return { success: true, path: csvPath };
@@ -112,8 +123,8 @@ ipcMain.handle("clear-csv", async () => {
 ipcMain.handle("read-csv", async () => {
   try {
     const basePath = app.isPackaged
-      ? path.join(app.getAppPath(), "../src/wps/logs/wpsSimulator.csv")
-      : path.join(__dirname, "../src/wps/logs/wpsSimulator.csv");
+      ? path.join(app.getAppPath(), "/src/wps/logs/wpsSimulator.csv")
+      : path.join(__dirname, "/src/wps/logs/wpsSimulator.csv");
 
     console.log("Ruta generada para el archivo CSV:", basePath); // Log para depuración
 
