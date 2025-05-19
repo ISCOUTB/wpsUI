@@ -1,24 +1,24 @@
-"use client"
-import Sidebar from "@/components/Sidebar/sidebar"
-import SimulationMap from "@/components/map/mapSimulator"
-import TabContent from "@/components/charts/datatabs/TabContent"
-import FarmInfoComponent from "./farmInfoComponents"
-import { Button } from "./ui/button"
-import { StopCircle } from "lucide-react"
+"use client";
+import Sidebar from "@/components/Sidebar/sidebar";
+import SimulationMap from "@/components/simulation/containerMap";
+import TabContent from "@/components/charts/datatabs/TabContent";
+import FarmInfoComponent from "./farmInfoComponents";
+import { Button } from "../ui/button";
+import { StopCircle } from "lucide-react";
 
 const ToggleButton = () => {
   const handleButtonClick = async () => {
     try {
-      const result = await window.electronAPI.killJavaProcess()
+      const result = await window.electronAPI.killJavaProcess();
       if (result.success) {
-        console.log("Proceso Java detenido correctamente")
+        console.log("Proceso Java detenido correctamente");
       } else {
-        console.error("Error al detener el proceso:", result.error)
+        console.error("Error al detener el proceso:", result.error);
       }
     } catch (error) {
-      console.error("Error al detener el proceso Java:", error)
+      console.error("Error al detener el proceso Java:", error);
     }
-  }
+  };
 
   return (
     <div className="flex items-center justify-center space-x-2 mt-2">
@@ -30,8 +30,8 @@ const ToggleButton = () => {
         <span>Stop</span>
       </Button>
     </div>
-  )
-}
+  );
+};
 export default function MapSimulator() {
   return (
     <div className="flex h-screen bg-[#111418] text-[#ffffff] font-archivo overflow-hidden">
@@ -57,6 +57,5 @@ export default function MapSimulator() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

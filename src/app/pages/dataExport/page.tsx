@@ -1,4 +1,4 @@
-import { DownloadSection } from "@/components/analytics/download/section";
+import { DownloadSection } from "@/components/analytics/downloadSection/section";
 
 export default function DownloadPage() {
   return (

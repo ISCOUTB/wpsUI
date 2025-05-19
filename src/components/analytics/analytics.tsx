@@ -40,7 +40,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { fetchCSVData } from "@/lib/csvUtils";
-import { DownloadSection } from "@/components/analytics/download/section";
+import { DownloadSection } from "@/components/analytics/downloadSection/section";
 import Image from "next/image";
 import {
   BarChart,
@@ -65,8 +65,8 @@ import {
 
 import type { ParameterType } from "@/lib/parameter-config";
 
-import { TimeSeriesAnalysis } from "@/components/analytics/time-series-analysis";
-import { AgentDetailView } from "@/components/analytics/agent-detail-view";
+import { TimeSeriesAnalysis } from "@/components/analytics/analysis/time-series-analysis";
+import { AgentDetailView } from "@/components/analytics/agent/agent-detail-view";
 import { icon } from "leaflet";
 const floatVariables = [
   { key: "HappinessSadness", color: "#DA4453" },

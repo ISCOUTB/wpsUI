@@ -4,6 +4,8 @@ export interface ElectronAPI {
   executeExe: (exePath: string, args: string[]) => Promise<string>;
   clearCsv: () => Promise<{ success: boolean; path?: string; error?: string }>;
   fileExists: (filePath: string) => Promise<boolean>;
+  on: (channel: string, listener: (...args: any[]) => void) => void;
+  removeListener: (channel: string, listener: (...args: any[]) => void) => void;
   killJavaProcess: () => Promise<{ success: boolean; error?: string }>;
   getAppPath: () => Promise<string>;
 }

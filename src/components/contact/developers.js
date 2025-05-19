@@ -1,3 +1,5 @@
+import { color } from "framer-motion";
+
 export const developers = [
   {
     name: "Andres Garcia Teheran",
@@ -22,7 +24,6 @@ export const developers = [
     github: "https://github.com/DonadoM",
     email: "donadom@utb.edu.co",
     color: "#EF4444",
-
   },
 
   {
@@ -32,6 +33,13 @@ export const developers = [
     github: "https://github.com/Stobio19",
     email: "stobio@utb.edu.co",
     color: "#EF4444",
+  },
 
-  }
+  {
+    name: "Jairo Serrano Castañeda",
+    role: "Author of the simulator",
+    image: "/developers/Jairo-Serrano.png",
+    github: "https://github.com/jairoserrano",
+    color: "#3B82F6",
+  },
 ];

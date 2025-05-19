@@ -1,5 +1,5 @@
 // import Sidebar from "@/components/Sidebar/sidebar";
-import Config from "@/components/settings/simulator-config-page";
+import Config from "@/components/settings/settings";
 import type React from "react";
 
 export default function Index() {

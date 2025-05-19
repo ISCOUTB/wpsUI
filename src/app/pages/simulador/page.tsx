@@ -1,4 +1,4 @@
-import MapSimulator from "@/components/mapSimulator";
+import MapSimulator from "@/components/simulation/Simulation";
 
 export default function Index() {
   return (

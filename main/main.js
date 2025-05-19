@@ -36,18 +36,18 @@ const createWindow = () => {
     show: true,
   });
 
- // Determinar la ubicación del archivo splash.html
-let splashPath;
-if (app.isPackaged) {
-  // En producción
-  splashPath = path.join(__dirname, "splash.html");
-} else {
-  // En desarrollo
-  splashPath = path.join(__dirname, "../main/splash.html");
-}
+  // Determinar la ubicación del archivo splash.html
+  let splashPath;
+  if (app.isPackaged) {
+    // En producción
+    splashPath = path.join(__dirname, "splash.html");
+  } else {
+    // En desarrollo
+    splashPath = path.join(__dirname, "../main/splash.html");
+  }
 
-console.log("Ruta del splash:", splashPath); // Útil para depuración
-splash.loadFile(splashPath);
+  console.log("Ruta del splash:", splashPath); // Útil para depuración
+  splash.loadFile(splashPath);
 
   // Crear la ventana principal
   mainWindow = new BrowserWindow({
@@ -88,8 +88,12 @@ ipcMain.handle("execute-exe", async (event, exePath, args) => {
       if (error) {
         reject(stderr || error.message);
       } else {
+        if(mainWindow) {
+          mainWindow.webContents.send("simulation-ended");
+        }
         resolve(stdout);
       }
+      javaProcess = null; // Resetear la referencia al proceso
     });
   });
 });
@@ -161,6 +165,9 @@ ipcMain.handle("kill-java-process", async () => {
       }
       // Resetear la referencia al proceso
       javaProcess = null;
+      if (mainWindow) {
+        mainWindow.webContents.send("simulation-ended");
+      }
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
@@ -168,6 +175,10 @@ ipcMain.handle("kill-java-process", async () => {
   } else {
     return { success: false, message: "No hay proceso Java activo" };
   }
+});
+
+ipcMain.handle("check-java-process", async () => {
+  return { running: !!javaProcess };
 });
 
 // Agregar este manejador para cerrar el proceso Java cuando se cierra la aplicación

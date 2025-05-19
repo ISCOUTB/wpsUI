@@ -1,6 +1,9 @@
+
 import "./styles/global.css";
 import type { Metadata } from "next";
-import { Archivo, Inter } from "next/font/google";
+import { Archivo } from "next/font/google";
+import { Toaster } from "@/components/ui/toaster";
+import { SimulationToastListener } from "@/components/settings/toastListener/toastListener";
 
 const archivo = Archivo({
   variable: "--font-archivo",
@@ -19,7 +22,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={archivo.className}>
-      <body className="font-archivo">{children}</body>
+      <body className="font-archivo">
+        <SimulationToastListener />
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

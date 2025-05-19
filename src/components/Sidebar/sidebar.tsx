@@ -1,19 +1,68 @@
-"use client";
+"use client"
 
-import type React from "react";
-import { Home, PieChart, Settings, Mail,Download } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import React, { useEffect, useState } from "react";
+import { Home, PieChart, Settings, Mail, Download } from "lucide-react";
+import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTheme } from "next-themes";
 import Image from "next/image";
-
+import { toast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { useRouter } from "next/navigation";
 
 const Sidebar: React.FC = () => {
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
+  const [isSimulationRunning, setIsSimulationRunning] = useState(false);
+
+
+ useEffect(() => {
+    const handler = () => {
+      toast({
+        variant: "default",
+        title: "Ended simulation",
+        description: "The simulation has ended! .",
+      });
+    };
+    if (window.electronAPI && window.electronAPI.on) {
+      window.electronAPI.on("simulation-ended", handler);
+    }
+    return () => {
+      if (window.electronAPI && window.electronAPI.removeListener) {
+        window.electronAPI.removeListener("simulation-ended", handler);
+      }
+    };
+  }, []);
+
+  // Chequea el estado del proceso Java periódicamente
+  useEffect(() => {
+    const checkSimulationStatus = async () => {
+      try {
+        if (window.electronAPI && window.electronAPI.checkJavaProcess) {
+          const result = await window.electronAPI.checkJavaProcess();
+          setIsSimulationRunning(result.running);
+        }
+      } catch {
+        setIsSimulationRunning(false);
+      }
+    };
+    checkSimulationStatus();
+    const interval = setInterval(checkSimulationStatus, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSettingsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isSimulationRunning) {
+      toast({
+        variant: "destructive",
+        title: "Data Simulation",
+        description: "Wait until the end of the simulation to start another one .",
+        action: <ToastAction altText="Got it">Got it</ToastAction>,
+      });
+      return;
+    }
+    router.push("/pages/settings");
+  };
 
   const menuItems = [
     { icon: <Home size={20} />, label: "Home Page", href: "/pages/simulador" },
@@ -22,9 +71,14 @@ const Sidebar: React.FC = () => {
       label: "Analytics",
       href: "/pages/analytics",
     },
-    { icon: <Settings size={20} />, label: "Settings", href: "/#" },
+    {
+      icon: <Settings size={20} />,
+      label: "Settings",
+      href: "/#",
+      onClick: handleSettingsClick,
+    },
     { icon: <Mail size={20} />, label: "Contact Us", href: "/pages/contact" },
-    {icon: <Download size={20} />, label: "Download", href: "/pages/dataExport" },
+    { icon: <Download size={20} />, label: "Download", href: "/pages/dataExport" },
   ];
 
   return (
@@ -45,6 +99,7 @@ const Sidebar: React.FC = () => {
                 <a
                   href={item.href}
                   className="flex items-center py-8 px-4 text-foreground hover:text-[#2664eb] rounded transition-colors font-clash text-white"
+                  onClick={item.onClick}
                 >
                   {item.icon}
                   <span className="ml-2">{item.label}</span>
@@ -57,13 +112,7 @@ const Sidebar: React.FC = () => {
 
       {/* Imagen en la parte inferior */}
       <div className="mt-auto flex justify-center p-4">
-        <Image
-          src="/UTB.png"
-          alt="WellProdSimulator"
-          width={300}
-          height={200}
-          className="object-contain"
-        />
+        <Image src="/UTB.png" alt="WellProdSimulator" width={300} height={200} className="object-contain" />
       </div>
     </div>
   );

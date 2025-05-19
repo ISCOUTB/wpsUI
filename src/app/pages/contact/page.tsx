@@ -25,16 +25,16 @@ const TeamSection = ({
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-[#DFE3E7] font-clash font-semibold text-2xl sm:text-3xl md:text-4xl mb-3 sm:mb-4">
-              Simular no es prever: es construir posibilidades para todos
+              Simulation is not prediction; it is creating possibilities for
+              everyone
             </h2>
             <p className="text-gray-400 font-archivo text-sm sm:text-base max-w-2xl mx-auto">
-              Somos el equipo detrás de WellProdSimulator, comprometidos con el
-              desarrollo de herramientas que modelan el bienestar social.
-              Creemos en el poder del conocimiento compartido y en la simulación
-              como medio para entender y mejorar nuestro entorno. Si tienes
-              dudas, ideas o propuestas, no dudes en contactarnos. Juntos
-              podemos construir escenarios más justos y sostenibles para el
-              futuro.
+              We are the team behind WellProdSimulator, committed to developing
+              tools that model social welfare. We believe in the power of shared
+              knowledge and in simulation as a means to understand and improve
+              our environment. If you have questions, ideas or proposals, do not
+              hesitate to contact us. Together we can build fairer and more
+              sustainable scenarios for the future.
             </p>
           </div>
 
