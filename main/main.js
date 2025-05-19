@@ -100,7 +100,7 @@ ipcMain.handle("clear-csv", async () => {
   try {
     const csvPath = path.join(
       app.getAppPath(),
-      "/src/wps/logs/wpsSimulator.csv"
+      "../src/wps/logs/wpsSimulator.csv"
     );
     fs.writeFileSync(csvPath, "");
     return { success: true, path: csvPath };

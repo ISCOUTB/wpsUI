@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RangeChart } from "../rangechart";
+import Papa from "papaparse";
 import {
   Select,
   SelectContent,
@@ -51,6 +52,9 @@ const TabContent: React.FC = () => {
   const [selectedType, setSelectedType] = useState<"integer" | "float">("integer");
   const [selectedAgent, setSelectedAgent] = useState<string>(ALL_AGENTS);
   const [agents, setAgents] = useState<string[]>([]);
+  
+  // Usar useRef para rastrear si los agentes ya se han cargado
+  const agentsLoadedRef = useRef<boolean>(false);
 
   const handleTypeChange = (type: "integer" | "float") => {
     setSelectedType(type);
@@ -60,29 +64,49 @@ const TabContent: React.FC = () => {
 
   const parameters = selectedType === "integer" ? integerVariables : floatVariables;
 
-  useEffect(() => {
-    const loadAgents = async () => {
-      try {
-        const response = await window.electronAPI.readCsv();
-        if (!response.success || !response.data) throw new Error(response.error || "Error al leer el archivo CSV");
-
-        const rows = response.data.split("\n").filter((line) => line.trim() !== "");
-        const headers = rows[0].split(",");
-        const agentIndex = headers.indexOf("Agent");
-
-        if (agentIndex === -1) throw new Error("No se encontró la columna 'Agent'");
-
-        const agentsSet = new Set(
-          rows.slice(1).map((row) => row.split(",")[agentIndex].trim())
-        );
-        setAgents(Array.from(agentsSet));
-      } catch (error) {
-        console.error("Error cargando agentes:", error);
+ // Modifica la sección useEffect para la carga de agentes
+useEffect(() => {
+  const loadAgents = async () => {
+    try {
+      console.log("Cargando agentes...");
+      const response = await window.electronAPI.readCsv();
+      if (!response.success || !response.data) {
+        console.error("Error al leer CSV:", response.error || "Error desconocido");
+        return;
       }
-    };
 
-    loadAgents();
-  }, []);
+      // Parsear el CSV correctamente usando Papa
+      Papa.parse(response.data, {
+        header: true,
+        complete: (results) => {
+          // Extraer los agentes únicos
+          const agentsSet = new Set<string>();
+          results.data.forEach((row: any) => {
+            if (row.Agent && typeof row.Agent === 'string' && row.Agent.trim() !== '') {
+              agentsSet.add(row.Agent.trim());
+            }
+          });
+          
+          const agentsList = Array.from(agentsSet);
+          console.log("Agentes cargados:", agentsList.length);
+          setAgents(agentsList);
+        },
+        error: (error) => {
+          console.error("Error al parsear CSV:", error);
+        }
+      });
+    } catch (error) {
+      console.error("Error cargando agentes:", error);
+    }
+  };
+
+  // Cargar agentes inmediatamente
+  loadAgents();
+  
+  // Configurar recarga periódica (cada 10 segundos)
+  const interval = setInterval(loadAgents, 10000);
+  return () => clearInterval(interval);
+}, []); // Ejecutar solo al montar el componente
 
   return (
     <Tabs defaultValue="overview" className="w-full h-full">

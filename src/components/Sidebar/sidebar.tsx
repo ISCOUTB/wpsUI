@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { Home, PieChart, Settings, Mail } from "lucide-react";
+import { Home, PieChart, Settings, Mail,Download } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useTheme } from "next-themes";
 import Image from "next/image";
+
 
 const Sidebar: React.FC = () => {
   const { theme, setTheme } = useTheme();
@@ -23,6 +24,7 @@ const Sidebar: React.FC = () => {
     },
     { icon: <Settings size={20} />, label: "Settings", href: "/#" },
     { icon: <Mail size={20} />, label: "Contact Us", href: "/pages/contact" },
+    {icon: <Download size={20} />, label: "Download", href: "/pages/dataExport" },
   ];
 
   return (

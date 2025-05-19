@@ -1,26 +1,28 @@
 "use client"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { ChevronLeft } from "lucide-react"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { ChevronRight, Users } from "lucide-react"
 import {
+  ResponsiveContainer,
   LineChart,
   Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  ReferenceLine,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts"
+
+// Componentes adicionales necesarios
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+
+// Colores para el gráfico de pastel
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"]
 
 interface AgentDetailViewProps {
   agentId: string
@@ -29,237 +31,138 @@ interface AgentDetailViewProps {
   averageEfficiency: number
 }
 
-export function AgentDetailView({
-  agentId,
-  agentData = {
-    status: "Unknown",
-    currentActivity: "None",
-    efficiency: 0,
-    tasksCompleted: 0,
-    performanceHistory: [],
-    metrics: {},
-    analysis: [],
-    activities: [],
-    activityLog: [],
-    interactions: [],
-    interactionInsights: [],
-  },
-  onBack,
-  averageEfficiency,
-}: AgentDetailViewProps) {
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"]
+export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency }: AgentDetailViewProps) {
+  if (!agentData) {
+    return <div>Cargando datos del agente...</div>
+  }
+
+  // Función para determinar el color del badge según el tipo de actividad
+  const getActivityColor = (type: string) => {
+    switch (type) {
+      case "work":
+        return "bg-blue-500"
+      case "rest":
+        return "bg-green-500"
+      case "social":
+        return "bg-purple-500"
+      default:
+        return "bg-yellow-500"
+    }
+  }
+
+  // Función para formatear el nombre de la tarea
+  const formatTaskName = (task: string) => {
+    return task
+      .replace(/Task.*$/, '')  // Elimina 'Task' y cualquier texto después
+      .replace(/([A-Z])/g, ' $1') // Inserta espacio antes de cada mayúscula
+      .trim() // Elimina espacios extra
+  }
 
   return (
-    <Card className="dark:bg-gray-800 dark:border-gray-700">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="dark:text-white">Agent #{agentId}</CardTitle>
-            <CardDescription className="dark:text-gray-400">
-              Detailed agent statistics and behavior analysis
-            </CardDescription>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onBack}
-            className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
-          >
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to All Agents
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="bg-muted/40 p-4 rounded-lg dark:bg-gray-700/40">
-            <p className="text-sm text-muted-foreground dark:text-gray-400">Status</p>
-            <h4 className="text-lg font-medium dark:text-white">{agentData?.status || "Unknown"}</h4>
-            <Badge
-              className={`mt-1 ${
-                agentData?.status === "Active"
-                  ? "bg-green-500/20 text-green-500 hover:bg-green-500/30 dark:bg-green-900/20 dark:text-green-400"
-                  : agentData?.status === "Idle"
-                    ? "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30 dark:bg-yellow-900/20 dark:text-yellow-400"
-                    : "bg-red-500/20 text-red-500 hover:bg-red-500/30 dark:bg-red-900/20 dark:text-red-400"
-              }`}
-            >
-              {agentData?.currentActivity || "Unknown"}
+    <div className="space-y-6">
+      {/* Botón de regreso */}
+      <Button
+        variant="outline"
+        onClick={onBack}
+        className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
+      >
+        <ChevronRight className="mr-2 h-4 w-4 rotate-180" />
+        Volver a la lista de agentes
+      </Button>
+
+      {/* Tarjeta principal de información del agente */}
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold dark:text-white">Familia {agentId}</h2>
+              <p className="text-muted-foreground dark:text-gray-400">{agentData.name || `Agent #${agentId}`}</p>
+            </div>
+            <Badge className={`
+              ${agentData.status === "Active" ? "bg-green-500" : 
+                agentData.status === "Struggling" ? "bg-yellow-500" : 
+                agentData.status === "Critical" ? "bg-red-500" : "bg-gray-500"} 
+              text-white border-none
+            `}>
+              {agentData.status || "Unknown"}
             </Badge>
           </div>
-          <div className="bg-muted/40 p-4 rounded-lg dark:bg-gray-700/40">
-            <p className="text-sm text-muted-foreground dark:text-gray-400">Efficiency</p>
-            <h4 className="text-lg font-medium dark:text-white">{agentData?.efficiency || 0}%</h4>
-            <p className="text-xs text-muted-foreground mt-1 dark:text-gray-500">
-              {agentData?.efficiency > averageEfficiency
-                ? `+${((agentData?.efficiency || 0) - averageEfficiency).toFixed(1)}% above average`
-                : agentData?.efficiency < averageEfficiency
-                  ? `${((agentData?.efficiency || 0) - averageEfficiency).toFixed(1)}% below average`
-                  : "At average"}
-            </p>
-          </div>
-          <div className="bg-muted/40 p-4 rounded-lg dark:bg-gray-700/40">
-            <p className="text-sm text-muted-foreground dark:text-gray-400">Tasks Completed</p>
-            <h4 className="text-lg font-medium dark:text-white">{agentData?.tasksCompleted || 0}</h4>
-            <p className="text-xs text-muted-foreground mt-1 dark:text-gray-500">Last 24 hours</p>
-          </div>
-        </div>
+        </CardHeader>
 
-        <Tabs defaultValue="performance" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6 dark:bg-gray-700 dark:text-gray-300">
-            <TabsTrigger
-              value="performance"
-              className="dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-white"
-            >
-              Performance
-            </TabsTrigger>
-            <TabsTrigger
-              value="activities"
-              className="dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-white"
-            >
-              Activities
-            </TabsTrigger>
-            <TabsTrigger
-              value="interactions"
-              className="dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-white"
-            >
-              Interactions
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="performance" className="space-y-4">
-            <div className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={agentData?.performanceHistory || []}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.5} vertical={false} />
-                  <XAxis
-                    dataKey="day"
-                    stroke="#888"
-                    label={{
-                      value: "Time",
-                      position: "bottom",
-                      fill: "#888",
-                    }}
-                  />
-                  <YAxis
-                    stroke="#888"
-                    label={{
-                      value: "Performance",
-                      angle: -90,
-                      position: "left",
-                      fill: "#888",
-                    }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#1f2937",
-                      border: "1px solid #374151",
-                      borderRadius: "6px",
-                      color: "#fff",
-                    }}
-                  />
-                  <Legend wrapperStyle={{ color: "#ccc" }} />
-                  <Line
-                    type="monotone"
-                    dataKey="efficiency"
-                    stroke="#8884d8"
-                    name="Efficiency"
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="productivity"
-                    stroke="#82ca9d"
-                    name="Productivity"
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
-                  />
-                  <ReferenceLine
-                    y={averageEfficiency}
-                    stroke="red"
-                    strokeDasharray="3 3"
-                    label={{
-                      value: "Avg Efficiency",
-                      fill: "red",
-                      position: "left",
-                    }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-                <h4 className="text-md font-medium mb-3 dark:text-white">Performance Metrics</h4>
-                <div className="space-y-3">
-                  {(agentData?.metrics ? Object.entries(agentData.metrics) : []).map(
-                    ([key, value]: [string, number]) => (
-                      <div key={key}>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm dark:text-gray-300">
-                            {key.charAt(0).toUpperCase() + key.slice(1)}
-                          </span>
-                          <span className="text-sm font-medium dark:text-white">{value}%</span>
-                        </div>
-                        <div className="w-full bg-gray-700 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              key === "efficiency"
-                                ? "bg-blue-500"
-                                : key === "productivity"
-                                  ? "bg-green-500"
-                                  : key === "happiness"
-                                    ? "bg-yellow-500"
-                                    : "bg-orange-500"
-                            }`}
-                            style={{ width: `${value}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ),
-                  )}
+        <CardContent className="space-y-6">
+          {/* Información general */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
+              <h3 className="text-lg font-medium mb-3 dark:text-white">Información General</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400">Actividad Actual</p>
+                  <p className="text-md dark:text-white">{agentData.currentActivity || "Unknown"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400">Salud</p>
+                  <p className="text-md dark:text-white">{agentData.metrics?.efficiency || 0}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400">Dinero</p>
+                  <p className="text-md dark:text-white">${agentData.metrics?.money?.toLocaleString() || 0}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400">Bienestar</p>
+                  <p className="text-md dark:text-white">{agentData.metrics?.happiness?.toFixed(1) || 0}%</p>
                 </div>
               </div>
-              <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-                <h4 className="text-md font-medium mb-3 dark:text-white">Performance Analysis</h4>
-                <ScrollArea className="h-[200px] pr-4">
-                  <div className="space-y-3">
-                    {agentData?.analysis.map((insight: string, index: number) => (
-                      <p key={index} className="text-sm dark:text-gray-300">
-                        {insight}
-                      </p>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
             </div>
-          </TabsContent>
 
-          <TabsContent value="activities" className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="h-80">
+            {/* Tierras */}
+            {agentData.lands && agentData.lands.length > 0 && (
+              <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
+                <h3 className="text-lg font-medium mb-3 dark:text-white">Tierras</h3>
+                <div className="space-y-3">
+                  {agentData.lands.map((land: any, index: number) => (
+                    <div key={index} className="bg-card border border-border rounded-lg p-3 dark:bg-gray-800/60 dark:border-gray-700">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-medium dark:text-white">{land.landName}</h4>
+                        <Badge variant={
+                          land.currentSeason === "GROWING" ? "success" : 
+                          land.currentSeason === "PLANTING" ? "warning" : "secondary"
+                        }>
+                          {land.currentSeason === "NONE" ? "Sin Cultivar" : land.currentSeason}
+                        </Badge>
+                      </div>
+                      {land.cropName && (
+                        <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
+                          Cultivo: {land.cropName}
+                        </p>
+                      )}
+                      <div className="mt-2 w-full bg-muted/30 h-2 rounded-full overflow-hidden dark:bg-gray-700">
+                        <div 
+                          className="bg-primary h-full dark:bg-blue-500" 
+                          style={{ width: `${(land.elapsedWorkTime / land.totalRequiredTime) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-muted-foreground dark:text-gray-500 mt-1">
+                        Progreso: {Math.floor((land.elapsedWorkTime / land.totalRequiredTime) * 100)}%
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Métricas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Performance History */}
+            <div className="bg-card border border-border rounded-lg p-6 dark:bg-gray-800 dark:border-gray-700">
+              <h3 className="text-lg font-medium mb-3 dark:text-white">Historial de Rendimiento</h3>
+              <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={agentData?.activities || []}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={100}
-                      innerRadius={60}
-                      fill="#8884d8"
-                      dataKey="value"
-                      nameKey="name"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {agentData?.activities.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
+                  <LineChart data={agentData.performanceHistory} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                    <XAxis dataKey="day" stroke="#888" />
+                    <YAxis stroke="#888" />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "#1f2937",
@@ -269,104 +172,119 @@ export function AgentDetailView({
                       }}
                     />
                     <Legend wrapperStyle={{ color: "#ccc" }} />
+                    <Line type="monotone" dataKey="efficiency" stroke="#8884d8" name="Salud" />
+                    <Line type="monotone" dataKey="productivity" stroke="#82ca9d" name="Productividad" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Activity Distribution */}
+            <div className="bg-card border border-border rounded-lg p-6 dark:bg-gray-800 dark:border-gray-700">
+              <h3 className="text-lg font-medium mb-3 dark:text-white">Distribución de Actividades</h3>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={agentData.activities}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {agentData.activities.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#333",
+                        border: "none",
+                        color: "#fff",
+                      }}
+                      labelStyle={{ color: "#ddd" }}
+                      itemStyle={{ color: "#fff" }}
+                    />
+                    <Legend wrapperStyle={{ color: "#ccc" }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-                <h4 className="text-md font-medium mb-3 dark:text-white">Activity Log</h4>
-                <ScrollArea className="h-[280px] pr-4">
-                  <div className="space-y-3">
-                    {(agentData?.activityLog || []).map((log: any, index: number) => (
-                      <div key={index} className="flex items-start">
-                        <div className="mr-3 mt-0.5">
-                          <div
-                            className={`h-2 w-2 rounded-full ${
-                              log.type === "work"
-                                ? "bg-blue-500"
-                                : log.type === "rest"
-                                  ? "bg-green-500"
-                                  : log.type === "social"
-                                    ? "bg-purple-500"
-                                    : "bg-yellow-500"
-                            }`}
-                          ></div>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground dark:text-gray-400">{log.time}</p>
-                          <p className="text-sm dark:text-gray-300">{log.activity}</p>
-                        </div>
-                      </div>
-                    ))}
+            </div>
+          </div>
+
+              {/* Activity Log */}
+      <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
+        <h3 className="text-lg font-medium mb-3 dark:text-white">Registro de Actividades</h3>
+        <ScrollArea className="h-[280px] pr-4">
+          <div className="space-y-3">
+            {agentData.activityLog && agentData.activityLog.length > 0 ? (
+              agentData.activityLog.map((log, index) => (
+                <div key={index} className="flex items-start">
+                  <div className="mr-3 mt-0.5">
+                    <div
+                      className={`h-2 w-2 rounded-full ${
+                        log.type === "work" ? "bg-blue-500" : 
+                        log.type === "rest" ? "bg-green-500" : 
+                        log.type === "social" ? "bg-purple-500" : 
+                        "bg-yellow-500"
+                      }`}
+                    ></div>
                   </div>
-                </ScrollArea>
-              </div>
-            </div>
-          </TabsContent>
+                  <div>
+                    <p className="text-xs text-muted-foreground dark:text-gray-400">{log.time}</p>
+                    <p className="text-sm dark:text-gray-300">{log.activity}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground dark:text-gray-400">
+                No hay actividades registradas para este agente.
+              </p>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
 
-          <TabsContent value="interactions" className="space-y-4">
-            <div className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={agentData?.interactions || []} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.5} vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    stroke="#888"
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                    label={{
-                      value: "Agents",
-                      position: "bottom",
-                      fill: "#888",
-                      offset: 40,
-                    }}
-                  />
-                  <YAxis
-                    stroke="#888"
-                    label={{
-                      value: "Interactions",
-                      angle: -90,
-                      position: "left",
-                      fill: "#888",
-                    }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#1f2937",
-                      border: "1px solid #374151",
-                      borderRadius: "6px",
-                      color: "#fff",
-                    }}
-                  />
-                  <Legend wrapperStyle={{ color: "#ccc" }} />
-                  <Bar dataKey="positive" name="Positive" fill="#4ade80" />
-                  <Bar dataKey="negative" name="Negative" fill="#f87171" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+          {/* Analysis */}
+          <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
+            <h3 className="text-lg font-medium mb-3 dark:text-white">Análisis</h3>
+            <ul className="list-disc pl-5 space-y-1 dark:text-gray-300">
+              {agentData.analysis && agentData.analysis.length > 0 ? (
+                agentData.analysis.map((item: string, index: number) => (
+                  <li key={index}>{item}</li>
+                ))
+              ) : (
+                <li>No hay análisis disponible para este agente.</li>
+              )}
+            </ul>
+          </div>
 
+          {/* Social Metrics */}
+          {agentData.interactionInsights && agentData.interactionInsights.length > 0 && (
             <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-              <h4 className="text-md font-medium mb-3 dark:text-white">Interaction Analysis</h4>
-              <div className="space-y-3">
-                {(agentData?.interactionInsights || []).map((insight: string, index: number) => (
-                  <p key={index} className="text-sm dark:text-gray-300">
+              <h3 className="text-lg font-medium mb-3 dark:text-white">Métricas Sociales</h3>
+              <ul className="space-y-2">
+                {agentData.interactionInsights.map((insight: string, index: number) => (
+                  <li key={index} className="text-sm dark:text-gray-300">
                     {insight}
-                  </p>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-      <CardFooter className="border-t border-border pt-4 flex justify-between dark:border-gray-700">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
-        >
-          Back to All Agents
-        </Button>
-      </CardFooter>
-    </Card>
+          )}
+        </CardContent>
+
+        <CardFooter className="border-t border-border pt-4 flex justify-end dark:border-gray-700">
+          <Button
+            onClick={onBack}
+            className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
+          >
+            Cerrar
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
   )
 }

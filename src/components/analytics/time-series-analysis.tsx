@@ -54,37 +54,67 @@ export function TimeSeriesAnalysis({ data }: { data: any[] }) {
   }, [data, selectedVariable]);
 
   // Calcular la media móvil (moving average)
-  const calculateMovingAverage = (data: number[], windowSize = 5): number[] => {
-    const result: number[] = [];
-    for (let i = 0; i < data.length; i++) {
-      if (i < windowSize - 1) {
-        result.push(Number.NaN); // No hay suficientes puntos para calcular la media móvil
-      } else {
+  // Calcular la media móvil (moving average)
+const calculateMovingAverage = (data: number[], windowSize = 5): number[] => {
+  const result: number[] = [];
+  for (let i = 0; i < data.length; i++) {
+    if (i < windowSize - 1) {
+      // Para los primeros puntos donde no tenemos suficientes datos
+      // podemos usar un promedio parcial en lugar de NaN
+      if (i > 0) {
         let sum = 0;
-        for (let j = 0; j < windowSize; j++) {
-          sum += data[i - j];
+        let count = 0;
+        for (let j = 0; j <= i; j++) {
+          if (!isNaN(data[i - j])) {
+            sum += data[i - j];
+            count++;
+          }
         }
-        result.push(sum / windowSize);
+        result.push(count > 0 ? sum / count : NaN);
+      } else {
+        result.push(data[i]); // Para el primer punto, usamos su valor actual
       }
+    } else {
+      // Calculamos el promedio con manejo de NaN
+      let sum = 0;
+      let count = 0;
+      for (let j = 0; j < windowSize; j++) {
+        if (!isNaN(data[i - j])) {
+          sum += data[i - j];
+          count++;
+        }
+      }
+      result.push(count > 0 ? sum / count : NaN);
     }
-    return result;
-  };
+  }
+  return result;
+};
 
   // Calcular la línea de tendencia (regresión lineal simple)
-  const calculateTrendLine = (data: number[]): { slope: number; intercept: number } => {
-    const n = data.length;
-    const indices = Array.from({ length: n }, (_, i) => i);
+  // Calcular la línea de tendencia (regresión lineal simple)
+const calculateTrendLine = (data: number[]): { slope: number; intercept: number } => {
+  // Validación de datos
+  const validData = data.filter(val => !isNaN(val) && val !== null && val !== undefined);
+  
+  if (validData.length < 2) {
+    return { slope: 0, intercept: 0 };
+  }
+  
+  const n = validData.length;
+  const indices = Array.from({ length: n }, (_, i) => i);
 
-    const sumX = indices.reduce((sum, x) => sum + x, 0);
-    const sumY = data.reduce((sum, y) => sum + y, 0);
-    const sumXY = indices.reduce((sum, x, i) => sum + x * data[i], 0);
-    const sumXX = indices.reduce((sum, x) => sum + x * x, 0);
+  const sumX = indices.reduce((sum, x) => sum + x, 0);
+  const sumY = validData.reduce((sum, y) => sum + y, 0);
+  const sumXY = indices.reduce((sum, x, i) => sum + x * validData[i], 0);
+  const sumXX = indices.reduce((sum, x) => sum + x * x, 0);
 
-    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    const intercept = (sumY - slope * sumX) / n;
+  // Evitar división por cero
+  const denominator = (n * sumXX - sumX * sumX);
+  const slope = denominator !== 0 ? (n * sumXY - sumX * sumY) / denominator : 0;
+  const intercept = (sumY - slope * sumX) / n;
 
-    return { slope, intercept };
-  };
+  return { slope, intercept };
+};
 
   // Calcular media móvil
   const movingAverageData = useMemo(() => {
@@ -131,21 +161,33 @@ export function TimeSeriesAnalysis({ data }: { data: any[] }) {
   }, [variableData]);
 
   // Calcular volatilidad
-  const volatility = useMemo(() => {
-    if (variableData.length === 0) return { level: "Unknown", value: 0 };
-    
-    const mean = variableData.reduce((sum, val) => sum + val, 0) / variableData.length;
-    const squaredDiffs = variableData.map(val => Math.pow(val - mean, 2));
-    const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / variableData.length;
-    const stdDev = Math.sqrt(variance);
-    const cv = stdDev / mean; // Coeficiente de variación
-    
-    let level = "Low";
-    if (cv > 0.3) level = "High";
-    else if (cv > 0.1) level = "Moderate";
-    
-    return { level, value: cv };
-  }, [variableData]);
+  // Calcular volatilidad
+const volatility = useMemo(() => {
+  // Filtrar valores válidos
+  const validData = variableData.filter(val => !isNaN(val) && val !== null && val !== undefined);
+  
+  if (validData.length < 2) {
+    return { level: "Unknown", value: 0 };
+  }
+  
+  const mean = validData.reduce((sum, val) => sum + val, 0) / validData.length;
+  
+  // Evitar división por cero
+  if (mean === 0) {
+    return { level: "Unknown", value: 0 };
+  }
+  
+  const squaredDiffs = validData.map(val => Math.pow(val - mean, 2));
+  const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / validData.length;
+  const stdDev = Math.sqrt(variance);
+  const cv = Math.abs(stdDev / mean); // Valor absoluto para evitar CV negativo
+  
+  let level = "Low";
+  if (cv > 0.3) level = "High";
+  else if (cv > 0.1) level = "Moderate";
+  
+  return { level, value: cv };
+}, [variableData]);
 
   // Calcular estadísticas de cambio
   const changeStats = useMemo(() => {
@@ -171,6 +213,21 @@ export function TimeSeriesAnalysis({ data }: { data: any[] }) {
     
     return { max, min, maxIndex, minIndex };
   }, [variableData]);
+
+  // Agrega este useMemo justo después de definir "extremes"
+const chartData = useMemo(() => {
+  if (!variableData || variableData.length === 0 || !movingAverageData || !trendData) {
+    return [];
+  }
+  
+  // Combinar los datos originales con los datos calculados
+  return data.map((item, index) => ({
+    ...item,
+    [selectedVariable]: item[selectedVariable],
+    movingAverage: movingAverageData[index],
+    trendLine: trendData[index]
+  }));
+}, [data, selectedVariable, movingAverageData, trendData, variableData]);
 
   // Obtener etiqueta para la variable
   const getLabel = (key: string): string => {
@@ -226,81 +283,92 @@ export function TimeSeriesAnalysis({ data }: { data: any[] }) {
         </div>
 
         <div className="h-80 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.5} />
-              <XAxis 
-                dataKey="name" 
-                stroke="#888"
-                label={{
-                  value: "Time",
-                  position: "bottom",
-                  fill: "#888",
-                  offset: 0,
-                }}
-              />
-              <YAxis 
-                stroke="#888"
-                label={{
-                  value: getLabel(selectedVariable),
-                  angle: -90,
-                  position: "left",
-                  fill: "#888",
-                }}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: "#1f2937",
-                  border: "1px solid #374151",
-                  borderRadius: "6px",
-                  color: "#fff",
-                }}
-                formatter={(value, name) => {
-                  if (name === selectedVariable) return [value, getLabel(selectedVariable)];
-                  if (name === "Moving Average") return [value, "5-day Moving Average"];
-                  if (name === "Trend Line") return [value, "Trend Line"];
-                  return [value, name];
-                }}
-              />
-              <Legend wrapperStyle={{ color: "#ccc" }} />
-              <defs>
-                <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={getColor(selectedVariable)} stopOpacity={0.8} />
-                  <stop offset="95%" stopColor={getColor(selectedVariable)} stopOpacity={0.1} />
-                </linearGradient>
-              </defs>
-              <Area
-                type="monotone"
-                dataKey={selectedVariable}
-                stroke={getColor(selectedVariable)}
-                fillOpacity={1}
-                fill="url(#colorGradient)"
-                name={getLabel(selectedVariable)}
-              />
-              {showMovingAverage && (
-                <Line
-                  type="monotone"
-                  dataKey={(_, index) => movingAverageData[index]}
-                  stroke="#ff7300"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Moving Average"
-                />
-              )}
-              {showTrend && (
-                <Line
-                  type="monotone"
-                  dataKey={(_, index) => trendData[index]}
-                  stroke="#82ca9d"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={false}
-                  name="Trend Line"
-                />
-              )}
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+  <ResponsiveContainer width="100%" height="100%">
+    <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.5} />
+      <XAxis 
+        dataKey="name" 
+        stroke="#888"
+        label={{
+          value: "Time",
+          position: "bottom",
+          fill: "#888",
+          offset: 0,
+        }}
+      />
+      <YAxis 
+        stroke="#888"
+        label={{
+          value: getLabel(selectedVariable),
+          angle: -90,
+          position: "left",
+          fill: "#888",
+        }}
+      />
+      <Tooltip 
+        contentStyle={{
+          backgroundColor: "#1f2937",
+          border: "1px solid #374151",
+          borderRadius: "6px",
+          color: "#fff",
+        }}
+        formatter={(value, name, props) => {
+          if (name === "movingAverage") return [isNaN(value) ? "N/A" : value.toFixed(2), "5-day Moving Average"];
+          if (name === "trendLine") return [isNaN(value) ? "N/A" : value.toFixed(2), "Trend Line"];
+          if (name === selectedVariable) return [isNaN(value) ? "N/A" : value.toFixed(2), getLabel(selectedVariable)];
+          return [value, name];
+        }}
+      />
+      <Legend wrapperStyle={{ color: "#ccc" }} />
+      <defs>
+        <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={getColor(selectedVariable)} stopOpacity={0.8} />
+          <stop offset="95%" stopColor={getColor(selectedVariable)} stopOpacity={0.1} />
+        </linearGradient>
+      </defs>
+      <Area
+        type="monotone"
+        dataKey={selectedVariable}
+        stroke={getColor(selectedVariable)}
+        fillOpacity={1}
+        fill="url(#colorGradient)"
+        name={getLabel(selectedVariable)}
+        isAnimationActive={true}
+      />
+      
+      {/* Línea de promedio móvil con mejor visibilidad */}
+      {showMovingAverage && (
+        <Line
+          type="monotone"
+          dataKey="movingAverage"
+          stroke="#ff7300"
+          strokeWidth={3}
+          dot={false}
+          activeDot={false}
+          name="Moving Average"
+          connectNulls={true}
+          isAnimationActive={true}
+        />
+      )}
+      
+      {/* Línea de tendencia con mejor visibilidad */}
+      {showTrend && (
+        <Line
+          type="linear"
+          dataKey="trendLine"
+          stroke="#82ca9d"
+          strokeWidth={3}
+          strokeDasharray="5 5"
+          dot={false}
+          activeDot={false}
+          name="Trend Line"
+          connectNulls={true}
+          isAnimationActive={true}
+        />
+      )}
+    </AreaChart>
+  </ResponsiveContainer>
+</div>
 
         {/* Añadimos las métricas de análisis */}
         <div className="grid md:grid-cols-3 gap-4">

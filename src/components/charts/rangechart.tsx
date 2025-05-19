@@ -22,42 +22,48 @@ interface RangeChartProps {
 export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type, agent }) => {
   const [data, setData] = useState<any[]>([]);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const response = await window.electronAPI.readCsv();
-        if (!response.success || !response.data) throw new Error(response.error || "Error al leer el archivo CSV");
-
-        // Analizar el contenido del CSV con papaparse
-        Papa.parse(response.data, {
-          header: true,
-          complete: (results) => {
-            const filteredData = results.data
-              .filter((row: any) => row.internalCurrentDate) // Asegurarse de que la fecha exista
-              .filter((row: any) => !agent || row.Agent === agent) // Filtrar por agente si está seleccionado
-              .map((row: any) => ({
-                date: row.internalCurrentDate, // Usar siempre internalCurrentDate como eje X
-                value: parseFloat(row[parameter]), // Filtrar por el parámetro seleccionado
-              }))
-              .filter((row) => !isNaN(row.value)); // Filtrar valores no numéricos
-
-            setData(filteredData);
-          },
-          error: (error: Error) => { // Especificar el tipo de 'error'
-            console.error("Error al analizar el archivo CSV:", error);
-          },
-        });
-      } catch (error) {
-        console.error("Error al cargar los datos:", error);
+  // Modifica useEffect para cargar datos cuando cambian las props
+useEffect(() => {
+  const loadData = async () => {
+    try {
+      console.log(`Cargando datos para parámetro: ${parameter}, agente: ${agent || 'todos'}`);
+      const response = await window.electronAPI.readCsv();
+      if (!response.success || !response.data) {
+        throw new Error(response.error || "Error al leer el archivo CSV");
       }
-    };
 
-    loadData();
+      // Analizar el CSV correctamente con Papa
+      Papa.parse(response.data, {
+        header: true,
+        complete: (results) => {
+          console.log(`CSV parseado: ${results.data.length} filas`);
+          const filteredData = results.data
+            .filter((row: any) => row.internalCurrentDate) 
+            .filter((row: any) => !agent || row.Agent === agent)
+            .map((row: any) => ({
+              date: row.internalCurrentDate,
+              value: parseFloat(row[parameter]), 
+            }))
+            .filter((row) => !isNaN(row.value));
 
-    // Actualización en tiempo real cada 5 segundos
-    const interval = setInterval(loadData, 2000);
-    return () => clearInterval(interval); // Limpiar el intervalo al desmontar el componente
-  }, [parameter, agent]);
+          console.log(`Datos filtrados para ${parameter}: ${filteredData.length} entradas`);
+          setData(filteredData);
+        },
+        error: (error) => {
+          console.error("Error al parsear CSV:", error);
+        },
+      });
+    } catch (error) {
+      console.error("Error al cargar datos:", error);
+    }
+  };
+
+  loadData();
+
+  // Actualizar cada 2 segundos
+  const interval = setInterval(loadData, 2000);
+  return () => clearInterval(interval);
+}, [parameter, agent]); // Dependencias: recarga cuando cambia parámetro o agente
 
   return (
     <ResponsiveContainer width="100%" height={400}>
@@ -69,8 +75,38 @@ export const RangeChart: React.FC<RangeChartProps> = ({ parameter, color, type, 
           </linearGradient>
         </defs>
         <CartesianGrid stroke="#2c2c2c" strokeDasharray="3 3" /> {/* Oscurecer cuadrículas */}
-        <XAxis dataKey="date" />
-        <YAxis />
+          <XAxis
+            dataKey="date"
+            ticks={
+              data.length > 2
+                ? [
+                    data[0]?.date,
+                    data[Math.floor(data.length / 2)]?.date,
+                    data[data.length - 1]?.date,
+                  ]
+                : data.map((d) => d.date)
+            }
+            tickFormatter={(date) => date}
+          />
+        <YAxis
+          tickFormatter={(value) => {
+            if (parameter === "money") {
+              if (Math.abs(value) >= 1_000_000) {
+                return (value / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+              }
+              if (Math.abs(value) >= 1_000) {
+                return (value / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+              }
+              return Number(value).toLocaleString("es-ES", {
+                style: "currency",
+                currency: "USD",
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 0,
+              });
+            }
+            return value;
+          }}
+        />
         <Tooltip />
         <Area type="monotone" dataKey="value" stroke={color} fill="url(#colorGradient)" />
       </AreaChart>

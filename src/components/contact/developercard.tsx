@@ -4,8 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { Github, Mail } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ChevronRight } from "lucide-react";
 
-export default function DeveloperCard({ developer }: { developer: { name: string; role: string; image: string; github?: string; email: string; color: string } }) {
+export default function DeveloperCard({
+  developer,
+}: {
+  developer: {
+    name: string;
+    role: string;
+    image: string;
+    github?: string;
+    email: string;
+    color: string;
+  };
+}) {
   const [imageError, setImageError] = useState(false);
 
   return (
@@ -50,7 +63,30 @@ export default function DeveloperCard({ developer }: { developer: { name: string
   );
 }
 
-function ContactIcon({ href, icon, color, label }: { href: string; icon: React.ReactNode; color: string; label: string }) {
+export function ButtonIcon()  {
+  return (
+    <Button variant="outline" size="icon">
+      <ChevronRight />
+    </Button>
+  )
+}
+
+
+
+
+
+
+function ContactIcon({
+  href,
+  icon,
+  color,
+  label,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  color: string;
+  label: string;
+}) {
   return (
     <Link
       href={href}

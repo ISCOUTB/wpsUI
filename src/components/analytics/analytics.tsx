@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { fetchCSVData } from "@/lib/csvUtils"; // Importa la función para leer el CSV
+import { fetchCSVData } from "@/lib/csvUtils"; 
 
 import {
   BarChart,
@@ -38,8 +38,9 @@ import {
 } from "recharts"
 
 import type { ParameterType } from "@/lib/parameter-config"
-import { DownloadSection } from "@/components/analytics/download-section";
+
 import { TimeSeriesAnalysis } from "@/components/analytics/time-series-analysis";
+import { AgentDetailView } from "@/components/analytics/agent-detail-view"
 const floatVariables = [
   { key: "HappinessSadness", color: "#DA4453" },
   { key: "HopefulUncertainty", color: "#967ADC" },
@@ -49,6 +50,18 @@ const floatVariables = [
   { key: "peasantLeisureAffinity", color: "#E9573F" },
   { key: "peasantFriendsAffinity", color: "#8CC152" },
   { key: "waterAvailable", color: "#5D9CEC" },
+  { key: "totalHarvestedWeight", color: "#CCD1D9" },
+  { key: "health", color: "#45B7D1" },
+  { key: "robberyAccount", color: "#5D9CEC" },
+  { key: "currentDay", color: "#AC92EC" },
+  { key: "toPay", color: "#EC87C0" },
+  { key: "peasantFamilyMinimalVital", color: "#5D9CEC" },
+  { key: "loanAmountToPay", color: "#48CFAD" },
+  { key: "tools", color: "#A0D468" },
+  { key: "seeds", color: "#ED5565" },
+  { key: "pesticidesAvailable", color: "#FC6E51" },
+  { key: "HarvestedWeight", color: "#FFCE54" },
+  { key: "daysToWorkForOther", color: "#4FC1E9" }
 ];
 
 const activityData = [
@@ -79,16 +92,338 @@ const navigationItems = [
     description: "Estado actual de los agentes",
     icon: <Users className="w-5 h-5" />,
   },
-  {
-    id: "download",
-    label: "Data Export",
-    description: "Exportar datos para análisis",
-    icon: <Download className="w-5 h-5" />,
-  },
+
 ]
 
 export default function Analytics() {
-   const [simulationData, setSimulationData] = useState<any[]>([]);
+ 
+interface AgentState {
+  peasantLeisureAffinity?: number;
+  peasantFriendsAffinity?: number;
+  peasantFamilyAffinity?: number;
+  peasantKind?: string;
+  contractor?: string;
+  pesticidesAvailable?: number;
+  initialHealth?: number;
+  purpose?: string;
+  initialMoney?: number;
+  tools?: number;
+  health?: number;
+  money?: number;
+  "Happiness/Sadness"?: number;
+  "Secure/Insecure"?: number;
+  "Hopeful/Uncertainty"?: number;
+  waterAvailable?: number;
+  totalHarvestedWeight?: number;
+  assignedLands?: any[];
+  currentActivity?: string;
+  internalCurrentDate?: string;
+  // Otras propiedades según sea necesario
+}
+// Agregar a los estados existentes
+const [agentTaskLogs, setAgentTaskLogs] = useState<Record<string, any>>({});
+const [loadedAgents, setLoadedAgents] = useState<string[]>([]);
+const socketRef = useRef<WebSocket | null>(null);
+
+// Modificar la conexión WebSocket (añadir al useEffect existente)
+useEffect(() => {
+  const connectWebSocket = () => {
+    const url = "ws://localhost:8000/wpsViewer";
+    const socket = new WebSocket(url);
+    socketRef.current = socket;
+
+    socket.onerror = (event) => {
+      console.error("Error en la conexión WebSocket:", url);
+      setTimeout(connectWebSocket, 2000);
+    };
+
+    socket.onopen = () => {
+      console.log("WebSocket conectado");
+      socket.send("setup");
+    };
+
+    socket.onmessage = (event) => {
+  const prefix = event.data.substring(0, 2);
+  const data = event.data.substring(2);
+  
+  switch (prefix) {
+    case "j=":
+      try {
+        console.log("Recibiendo datos j=");
+        const jsonData = JSON.parse(data);
+        const { name, taskLog, state } = jsonData;
+        
+        // CORRECCIÓN: Guardar tanto taskLog como state en una estructura anidada
+        if (name) {
+          console.log(`Recibiendo datos para ${name} con ${Object.keys(taskLog || {}).length} fechas`);
+          setAgentTaskLogs(prev => ({
+            ...prev,
+            [name]: { taskLog, state }  // Esta es la estructura correcta
+          }));
+          
+          // Añadir el agente a la lista si no existe
+          setLoadedAgents(prev => {
+            if (!prev.includes(name)) {
+              return [...prev, name];
+            }
+            return prev;
+          });
+        }
+      } catch (error) {
+        console.error("Error al procesar datos del agente:", error);
+      }
+      break;
+  }
+};
+    socket.onclose = () => {
+      console.log("WebSocket desconectado");
+      setTimeout(connectWebSocket, 2000);
+    };
+
+    return socket;
+  };
+
+  const socket = connectWebSocket();
+  
+  return () => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.close();
+    }
+  };
+}, []);
+
+// Función de ayuda para formatear nombres de tareas
+const formatTaskName = (taskName: string): string => {
+  // Eliminar 'Task' del final y separar palabras
+  return taskName
+    .replace(/Task.*$/, '')  // Elimina 'Task' y cualquier texto después
+    .replace(/([A-Z])/g, ' $1') // Inserta espacio antes de cada mayúscula
+    .trim(); // Elimina espacios extra
+};
+
+const getAgentData = (agentId: string) => {
+  const agentIndex = parseInt(agentId) - 1;
+  if (agentIndex < 0 || agentIndex >= loadedAgents.length) {
+    return {
+      name: "Unknown",
+      status: "Unknown",
+      currentActivity: "Unknown",
+      metrics: { efficiency: 0, productivity: 0, happiness: 0, energy: 0, money: 0 },
+      lands: [],
+      activityLog: [],
+      activities: [],
+      analysis: [],
+      performanceHistory: [],
+      interactionInsights: []
+    };
+  }
+
+  const agentName = loadedAgents[agentIndex];
+  console.log("Obteniendo datos para:", agentName);
+  
+  // Obtener los datos completos del agente (taskLog y state)
+  const agentInfo = agentTaskLogs[agentName] || {};
+  console.log("AgentInfo para", agentName, ":", JSON.stringify(agentInfo).substring(0, 100) + "...");
+  
+  const taskLog = agentInfo.taskLog || {};
+  console.log("TaskLog a procesar:", JSON.stringify(taskLog).substring(0, 100) + "...");
+  console.log("TaskLog keys:", Object.keys(taskLog));
+  
+  // Procesar el taskLog para ordenarlo cronológicamente
+  const activityLog = processTaskLog(taskLog);
+  
+  // Analizar el state del agente como AgentState
+  let agentStateData: AgentState = {};
+  try {
+    if (agentInfo.state) {
+      if (typeof agentInfo.state === 'string') {
+        agentStateData = JSON.parse(agentInfo.state);
+      } else {
+        agentStateData = agentInfo.state;
+      }
+    }
+  } catch (error) {
+    console.error("Error parseando state:", error);
+  }
+  
+  // Extraer valores importantes del estado
+  const health = agentStateData.health || 70;
+  const money = agentStateData.money || 0;
+  const happiness = ((agentStateData["Happiness/Sadness"] || 0) + 1) / 2 * 100;
+  const waterAvailable = agentStateData.waterAvailable || 0;
+  const lands = agentStateData.assignedLands || [];
+  
+  // Contar tipos de actividades para el gráfico de pie
+  const activityCounts: Record<string, number> = {};
+  activityLog.forEach(log => {
+    const activity = log.activity;
+    activityCounts[activity] = (activityCounts[activity] || 0) + 1;
+  });
+  
+  // Convertir a formato para el gráfico de pie
+  const activities = Object.entries(activityCounts)
+    .map(([key, value]) => ({ name: key, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5); // Top 5 actividades
+  
+  // Crear historial de rendimiento simulado
+  const performanceHistory = Array.from({ length: 5 }, (_, i) => ({
+    day: `Día ${i + 1}`,
+    efficiency: Math.max(0, Math.min(100, health - (5 - i) * 2)),
+    productivity: Math.max(0, Math.min(100, (agentStateData.totalHarvestedWeight || 0) / 100 * 100 + i * 5)),
+  }));
+  
+  // Crear análisis basado en los datos
+  const analysis = [
+    `Salud actual: ${health}%`,
+    `Dinero disponible: $${money.toLocaleString()}`,
+    happiness > 70 ? "Estado emocional positivo" : 
+      happiness > 40 ? "Estado emocional neutral" : "Estado emocional negativo",
+    waterAvailable > 1000 ? "Recursos hídricos abundantes" : "Recursos hídricos limitados"
+  ];
+  
+  // Crear insights de interacción social
+  const interactionInsights = [
+    `Afinidad familiar: ${((agentStateData.peasantFamilyAffinity || 0) * 100).toFixed(1)}%`,
+    `Afinidad con amigos: ${((agentStateData.peasantFriendsAffinity || 0) * 100).toFixed(1)}%`,
+    `Afinidad con ocio: ${((agentStateData.peasantLeisureAffinity || 0) * 100).toFixed(1)}%`,
+  ];
+  
+  return {
+    name: agentName,
+    status: health < 30 ? "Critical" : health < 60 ? "Struggling" : "Active",
+    currentActivity: formatCurrentActivity(agentStateData.currentActivity || "Unknown"),
+    metrics: {
+      efficiency: health,
+      productivity: (agentStateData.totalHarvestedWeight || 0) / 100 * 100,
+      happiness: happiness,
+      energy: waterAvailable > 1000 ? 100 : 50,
+      money: money
+    },
+    lands: lands,
+    activityLog,  // Esto contiene el registro de actividades procesado
+    activities,
+    analysis,
+    performanceHistory,
+    interactionInsights
+  };
+};
+// Función auxiliar para formatear la actividad actual
+const formatCurrentActivity = (activity: string) => {
+  return activity
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, l => l.toUpperCase());
+};
+
+const processTaskLog = (taskLog: Record<string, string[]>): any[] => {
+  // Si no hay taskLog, devolver array vacío
+  if (!taskLog || Object.keys(taskLog).length === 0) {
+    console.log("TaskLog vacío");
+    return [];
+  }
+  
+  console.log("Procesando taskLog con", Object.keys(taskLog).length, "fechas");
+  
+  // Función auxiliar para convertir fecha DD/MM/YYYY a objeto Date
+  const parseDate = (dateStr: string): Date => {
+    const [day, month, year] = dateStr.split('/').map(Number);
+    return new Date(year, month - 1, day);
+  };
+  
+  // Ordenar las fechas cronológicamente (de más reciente a más antigua)
+  const sortedDates = Object.keys(taskLog).sort((a, b) => {
+    const dateA = parseDate(a);
+    const dateB = parseDate(b);
+    return dateB.getTime() - dateA.getTime();
+  });
+  
+  console.log("Fechas ordenadas:", sortedDates.slice(0, 5), "...");
+  
+  // Crear el array de actividades ordenado por fecha
+  const activities = [];
+  
+  // Tomar hasta 10 fechas recientes para no sobrecargar la vista
+  const recentDates = sortedDates.slice(0, 10);
+  
+  for (const date of recentDates) {
+    const tasks = taskLog[date] || [];
+    
+    for (const task of tasks) {
+      activities.push({
+        time: date,
+        activity: formatTaskName(task),
+        type: getTaskType(task)
+      });
+    }
+  }
+  
+  // CORRECCIÓN: Añadir el return y limitar a un número manejable
+  return activities.slice(0, 20);
+};
+
+// Determinar el tipo de tarea para asignarle un color
+const getTaskType = (task: string): string => {
+  if (task.includes('Vital')) return 'rest';
+  if (task.includes('Land') || task.includes('Crop') || task.includes('Plant')) return 'work';
+  if (task.includes('Family') || task.includes('Religious')) return 'social';
+  if (task.includes('Alternative') || task.includes('Price')) return 'work';
+  return 'other';
+};
+
+
+
+const [agentsData, setAgentsData] = useState<any[]>([]); // Add this line to define agentsData state
+const agentsLoadedRef = useRef<boolean>(false);
+
+// Reemplazar el useEffect de WebSocket con este nuevo useEffect para cargar desde CSV
+useEffect(() => {
+  // Solo cargar agentes si no se han cargado previamente
+  if (!agentsLoadedRef.current) {
+    const loadAgents = async () => {
+      try {
+        console.log("Cargando agentes desde CSV...");
+        const response = await window.electronAPI.readCsv();
+        if (!response.success || !response.data) {
+          throw new Error(response.error || "Error al leer el archivo CSV");
+        }
+
+        const rows = response.data.split("\n").filter((line) => line.trim() !== "");
+        const headers = rows[0].split(",");
+        const agentIndex = headers.indexOf("Agent");
+
+        if (agentIndex === -1) {
+          throw new Error("No se encontró la columna 'Agent'");
+        }
+
+        const agentsSet = new Set(
+          rows.slice(1).map((row) => row.split(",")[agentIndex].trim())
+        );
+        
+        const uniqueAgents = Array.from(agentsSet);
+        setLoadedAgents(uniqueAgents);
+        
+        // También crear datos para agentsData con el mismo formato que antes
+        const formattedAgents = uniqueAgents.map((name, index) => ({
+          id: name,
+          name: `Familia ${index + 1}`,
+          status: "Active"
+        }));
+        setAgentsData(formattedAgents);
+        
+        // Marcar que los agentes ya se han cargado
+        agentsLoadedRef.current = true;
+        console.log("Agentes cargados con éxito:", uniqueAgents.length);
+      } catch (error) {
+        console.error("Error cargando agentes:", error);
+      }
+    };
+
+    loadAgents();
+  }
+}, []); // Array de dependencias vacío, se ejecuta solo al montar
+  
+const [simulationData, setSimulationData] = useState<any[]>([]);
 const [isTimeRangeSet, setIsTimeRangeSet] = useState(false); // Controla si el rango fue configurado manualmente
 const [timeRange, setTimeRange] = useState<[number, number]>([0, 100]); // Rango de tiempo inicial
 
@@ -97,11 +432,13 @@ useEffect(() => {
     try {
       const csvData = await fetchCSVData(); // Carga los datos del CSV
       const mappedData = csvData.map((row: Record<string, any>) => ({
-        name: row.internalCurrentDate || "Unknown Date", // Usa la fecha como nombre
-        ...floatVariables.reduce((acc, variable) => {
-          acc[variable.key] = parseFloat(String(row[variable.key])) || 0;
-          return acc;
-        }, {} as Record<string, number>),
+      name: row.internalCurrentDate || "Unknown Date",
+      ...Object.keys(row).reduce((acc, key) => {
+        // Intenta convertir todos los valores a números si es posible
+        const value = parseFloat(String(row[key]));
+        acc[key] = isNaN(value) ? row[key] : value;
+        return acc;
+      }, {} as Record<string, any>)
       }));
       setSimulationData(mappedData);
 
@@ -114,20 +451,20 @@ useEffect(() => {
     }
   };
 
-  loadData(); // Carga inicial
+  loadData(); 
 
-  const interval = setInterval(loadData, 2000); // Actualiza cada 2 segundos
+  const interval = setInterval(loadData, 2000); 
 
-  return () => clearInterval(interval); // Limpia el intervalo al desmontar
+  return () => clearInterval(interval); 
 }, [isTimeRangeSet]);
 
-// Controlador para manejar cambios en el rango de tiempo
+
 const handleTimeRangeChange = (newRange: [number, number]) => {
   setTimeRange(newRange);
-  setIsTimeRangeSet(true); // Marca que el usuario configuró el rango manualmente
+  setIsTimeRangeSet(true); 
 };
 
-// Otros estados y variables
+
 const [selectedType, setSelectedType] = useState<ParameterType>("integer");
 const [selectedParameter, setSelectedParameter] = useState("currentActivity");
 const [activeSection, setActiveSection] = useState("home");
@@ -145,7 +482,28 @@ const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
 const [showRegressionLine, setShowRegressionLine] = useState(true);
 const [distributionBins, setDistributionBins] = useState(10);
 const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
- 
+ // Añade este useEffect después de tus otros useEffects en el componente Analytics
+useEffect(() => {
+  // Solo iniciar el intervalo cuando haya un agente seleccionado
+  if (selectedAgent) {
+    console.log("Configurando actualización periódica para el agente:", selectedAgent);
+    
+    // Función para actualizar los datos del agente
+    const updateAgentData = () => {
+      const updatedData = getAgentData(selectedAgent);
+      setSelectedAgentData(updatedData);
+    };
+
+    // Configurar el intervalo para actualizar cada 2 segundos
+    const intervalId = setInterval(updateAgentData, 2000);
+
+    // Limpiar el intervalo cuando cambie el agente seleccionado o se desmonte el componente
+    return () => {
+      console.log("Limpiando intervalo de actualización del agente");
+      clearInterval(intervalId);
+    };
+  }
+}, [selectedAgent]); // Dependencia: el efecto se ejecuta cuando cambia el agente seleccionado
 
   // Detección de dispositivo móvil y manejo del sidebar
   useEffect(() => {
@@ -160,6 +518,42 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
 
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
+
+
+  // Agrega esta función a tu componente
+const calculateTrend = (data: number[]): string => {
+  if (data.length < 2) return "Datos insuficientes";
+  
+  const firstHalf = data.slice(0, Math.floor(data.length / 2));
+  const secondHalf = data.slice(Math.floor(data.length / 2));
+  
+  const firstHalfMean = calculateMean(firstHalf);
+  const secondHalfMean = calculateMean(secondHalf);
+  
+  const percentChange = ((secondHalfMean - firstHalfMean) / firstHalfMean) * 100;
+  
+  if (percentChange > 5) return `↑ +${percentChange.toFixed(1)}% (mejorando)`;
+  if (percentChange < -5) return `↓ ${percentChange.toFixed(1)}% (deteriorando)`;
+  return "Estable";
+}
+
+const calculateWellbeingIndex = (data: any[]): number => {
+  if (data.length === 0) return 0;
+  
+  const recentData = data.slice(-10);
+  
+  // Normaliza los valores antes de combinarlos
+  const happiness = Math.min(1, Math.max(0, calculateMean(recentData.map(item => item.HappinessSadness || 0))));
+  const security = Math.min(1, Math.max(0, calculateMean(recentData.map(item => item.SecureInsecure || 0))));
+  const resources = Math.min(1, Math.max(0, calculateMean(recentData.map(item => item.waterAvailable || 0))));
+  const health = Math.min(1, Math.max(0, calculateMean(recentData.map(item => item.health || 0)) / 100));
+  const social = Math.min(1, Math.max(0, calculateMean(recentData.map(item => 
+    (item.peasantFamilyAffinity || 0) * 0.6 + (item.peasantFriendsAffinity || 0) * 0.4
+  ))));
+  
+  // Índice ponderado con 5 factores principales
+  return (happiness * 0.25 + security * 0.2 + resources * 0.2 + health * 0.2 + social * 0.15) * 100;
+}
 
   // Datos de ejemplo para gráficos de parámetros
   const getParameterData = () => {
@@ -202,100 +596,247 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
   // Calcula el promedio de eficiencia para la ReferenceLine
   const averageEfficiency = simulationData.reduce((sum, entry) => sum + entry.efficiency, 0) / simulationData.length
 
-  // Statistical utility functions
-  const calculateMean = (data: number[]): number => {
-    return data.reduce((sum, value) => sum + value, 0) / data.length
+  // Funciones estadísticas mejoradas
+const calculateMean = (data: number[]): number => {
+  if (!data.length) return 0;
+  const validData = data.filter(n => !isNaN(n));
+  if (!validData.length) return 0;
+  return validData.reduce((sum, value) => sum + value, 0) / validData.length;
+}
+
+const calculateMedian = (data: number[]): number => {
+  if (!data.length) return 0;
+  const validData = data.filter(n => !isNaN(n));
+  if (!validData.length) return 0;
+  
+  const sorted = [...validData].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle];
+}
+
+const calculateStandardDeviation = (data: number[]): number => {
+  if (!data.length) return 0;
+  const validData = data.filter(n => !isNaN(n));
+  if (!validData.length) return 0;
+  
+  const mean = calculateMean(validData);
+  const squareDiffs = validData.map((value) => Math.pow(value - mean, 2));
+  const variance = calculateMean(squareDiffs);
+  return Math.sqrt(variance);
+}
+
+
+
+const calculateCorrelation = (xData: number[], yData: number[]): number => {
+  const validX = xData.filter(n => !isNaN(n));
+  const validY = yData.filter(n => !isNaN(n));
+  
+  // Necesitamos el mismo número de puntos en ambos arrays
+  if (validX.length !== validY.length || validX.length === 0) return 0;
+
+  const xMean = calculateMean(validX);
+  const yMean = calculateMean(validY);
+
+  let numerator = 0;
+  let xDenominator = 0;
+  let yDenominator = 0;
+
+  for (let i = 0; i < validX.length; i++) {
+    const xDiff = validX[i] - xMean;
+    const yDiff = validY[i] - yMean;
+    numerator += xDiff * yDiff;
+    xDenominator += xDiff * xDiff;
+    yDenominator += yDiff * yDiff;
   }
 
-  const calculateMedian = (data: number[]): number => {
-    const sorted = [...data].sort((a, b) => a - b)
-    const middle = Math.floor(sorted.length / 2)
-    return sorted.length % 2 === 0 ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle]
-  }
-
-  const calculateStandardDeviation = (data: number[]): number => {
-    const mean = calculateMean(data)
-    const squareDiffs = data.map((value) => Math.pow(value - mean, 2))
-    const variance = calculateMean(squareDiffs)
-    return Math.sqrt(variance)
-  }
-
-  const calculateCorrelation = (xData: number[], yData: number[]): number => {
-    if (xData.length !== yData.length || xData.length === 0) return 0
-
-    const xMean = calculateMean(xData)
-    const yMean = calculateMean(yData)
-
-    let numerator = 0
-    let xDenominator = 0
-    let yDenominator = 0
-
-    for (let i = 0; i < xData.length; i++) {
-      const xDiff = xData[i] - xMean
-      const yDiff = yData[i] - yMean
-      numerator += xDiff * yDiff
-      xDenominator += xDiff * xDiff
-      yDenominator += yDiff * yDiff
-    }
-
-    if (xDenominator === 0 || yDenominator === 0) return 0
-    return numerator / Math.sqrt(xDenominator * yDenominator)
-  }
-
+  if (xDenominator === 0 || yDenominator === 0) return 0;
+  return numerator / Math.sqrt(xDenominator * yDenominator);
+}
   // Filter data based on time range
   const filteredData = useMemo(() => {
     return simulationData.slice(timeRange[0], timeRange[1] + 1)
   }, [timeRange])
 
-  // Extract data for selected variables
-  const primaryData = useMemo(() => {
-    return filteredData.map((item) => item[primaryVariable as keyof typeof item] as number)
-  }, [filteredData, primaryVariable])
+// Detectar outliers usando el método IQR
+const detectOutliers = (data: number[]): { indices: number[]; lowerBound: number; upperBound: number } => {
+  if (data.length < 4) return { indices: [], lowerBound: 0, upperBound: 0 };
+  
+  const sortedData = [...data].sort((a, b) => a - b);
+  
+  // Encuentra Q1 y Q3 (cuartiles)
+  const q1Index = Math.floor(sortedData.length * 0.25);
+  const q3Index = Math.floor(sortedData.length * 0.75);
+  
+  const q1 = sortedData[q1Index];
+  const q3 = sortedData[q3Index];
+  
+  // Calcula IQR
+  const iqr = q3 - q1;
+  
+  // Define límites para outliers (típicamente 1.5*IQR)
+  const lowerBound = q1 - 1.5 * iqr;
+  const upperBound = q3 + 1.5 * iqr;
+  
+  // Encuentra los índices de los outliers
+  const indices = data.map((val, idx) => 
+    (val < lowerBound || val > upperBound) ? idx : -1
+  ).filter(idx => idx !== -1);
+  
+  return { indices, lowerBound, upperBound };
+};
 
-  const secondaryData = useMemo(() => {
-    return filteredData.map((item) => item[secondaryVariable as keyof typeof item] as number)
-  }, [filteredData, secondaryVariable])
+// Calcular parámetros de regresión lineal
+const calculateRegressionLine = (xData: number[], yData: number[]): { slope: number; intercept: number } => {
+  // Filtramos NaN y aseguramos misma longitud
+  const validIndices = xData.map((_, i) => i).filter(i => 
+    !isNaN(xData[i]) && !isNaN(yData[i]) && 
+    xData[i] !== null && yData[i] !== null
+  );
+  
+  const validX = validIndices.map(i => xData[i]);
+  const validY = validIndices.map(i => yData[i]);
+  
+  if (validX.length < 2) return { slope: 0, intercept: 0 };
+  
+  const xMean = calculateMean(validX);
+  const yMean = calculateMean(validY);
+  
+  let numerator = 0;
+  let denominator = 0;
+  
+  for (let i = 0; i < validX.length; i++) {
+    const xDiff = validX[i] - xMean;
+    numerator += xDiff * (validY[i] - yMean);
+    denominator += xDiff * xDiff;
+  }
+  
+  // Evitar división por cero
+  const slope = denominator !== 0 ? numerator / denominator : 0;
+  const intercept = yMean - slope * xMean;
+  
+  return { slope, intercept };
+};
+
+// Dentro del componente Analytics, agrega estos useMemos:
+
+// Extrae los datos primarios y secundarios con manejo de NaN
+const primaryData = useMemo(() => {
+  return filteredData
+    .map((item) => item[primaryVariable as keyof typeof item] as number)
+    .filter(value => !isNaN(value) && value !== null && value !== undefined);
+}, [filteredData, primaryVariable]);
+
+const secondaryData = useMemo(() => {
+  return filteredData
+    .map((item) => item[secondaryVariable as keyof typeof item] as number)
+    .filter(value => !isNaN(value) && value !== null && value !== undefined);
+}, [filteredData, secondaryVariable]);
+
+// Detectar outliers en ambas variables
+const primaryOutliers = useMemo(() => {
+  return detectOutliers(primaryData);
+}, [primaryData]);
+
+const secondaryOutliers = useMemo(() => {
+  return detectOutliers(secondaryData);
+}, [secondaryData]);
+
+// Filtrar outliers si es necesario
+const filteredOutlierData = useMemo(() => {
+  if (showOutliers) return filteredData;
+  
+  // Combinar índices de outliers de ambas variables
+  const outlierIndices = new Set([
+    ...primaryOutliers.indices,
+    ...secondaryOutliers.indices
+  ]);
+  
+  // Filtrar los datos para excluir outliers
+  return filteredData.filter((_, index) => !outlierIndices.has(index));
+}, [filteredData, showOutliers, primaryOutliers.indices, secondaryOutliers.indices]);
+
+// Calcular datos para la línea de regresión
+const regressionParams = useMemo(() => {
+  return calculateRegressionLine(
+    filteredOutlierData.map(item => item[primaryVariable]),
+    filteredOutlierData.map(item => item[secondaryVariable])
+  );
+}, [filteredOutlierData, primaryVariable, secondaryVariable]);
+
+
+const regressionLineData = useMemo(() => {
+  const { slope, intercept } = regressionParams;
+  
+  // Si no hay datos válidos, retorna un array vacío
+  if (filteredOutlierData.length < 2) return [];
+  
+  // Obtener valores min/max de X para dibujar la línea
+  const xValues = filteredOutlierData.map(d => d[primaryVariable]);
+  const validXValues = xValues.filter(x => !isNaN(x));
+  
+  if (validXValues.length < 2) return [];
+  
+  const minX = Math.min(...validXValues);
+  const maxX = Math.max(...validXValues);
+  
+  // Crear puntos para la línea de regresión con formato correcto
+  return [
+    { [primaryVariable]: minX, [secondaryVariable]: intercept + slope * minX },
+    { [primaryVariable]: maxX, [secondaryVariable]: intercept + slope * maxX }
+  ];
+}, [filteredOutlierData, primaryVariable, secondaryVariable, regressionParams]);
 
   // Calculate statistics
-  const statistics = useMemo(() => {
-  if (primaryData.length === 0 || secondaryData.length === 0) {
+// Modificar el cálculo de estadísticas
+const statistics = useMemo(() => {
+  // Usar los datos filtrados según la opción de outliers
+  const dataToAnalyze = showOutliers ? filteredData : filteredOutlierData;
+  
+  if (dataToAnalyze.length === 0) {
     return {
-      primary: {
-        mean: 0,
-        median: 0,
-        stdDev: 0,
-        min: 0,
-        max: 0,
-      },
-      secondary: {
-        mean: 0,
-        median: 0,
-        stdDev: 0,
-        min: 0,
-        max: 0,
-      },
+      primary: { mean: 0, median: 0, stdDev: 0, min: 0, max: 0 },
+      secondary: { mean: 0, median: 0, stdDev: 0, min: 0, max: 0 },
       correlation: 0,
+      regression: { slope: 0, intercept: 0, r2: 0 },
+      outliers: { 
+        primaryCount: primaryOutliers.indices.length,
+        secondaryCount: secondaryOutliers.indices.length
+      }
     };
   }
 
+  const validPrimaryData = dataToAnalyze.map(item => item[primaryVariable]).filter(n => !isNaN(n));
+  const validSecondaryData = dataToAnalyze.map(item => item[secondaryVariable]).filter(n => !isNaN(n));
+
+  const correlation = calculateCorrelation(validPrimaryData, validSecondaryData);
+  const { slope, intercept } = regressionParams;
+  
+  // Calcular R² (coeficiente de determinación)
+  const r2 = correlation * correlation;
+
   return {
     primary: {
-      mean: calculateMean(primaryData),
-      median: calculateMedian(primaryData),
-      stdDev: calculateStandardDeviation(primaryData),
-      min: Math.min(...primaryData),
-      max: Math.max(...primaryData),
+      mean: calculateMean(validPrimaryData),
+      median: calculateMedian(validPrimaryData),
+      stdDev: calculateStandardDeviation(validPrimaryData),
+      min: validPrimaryData.length ? Math.min(...validPrimaryData) : 0,
+      max: validPrimaryData.length ? Math.max(...validPrimaryData) : 0,
     },
     secondary: {
-      mean: calculateMean(secondaryData),
-      median: calculateMedian(secondaryData),
-      stdDev: calculateStandardDeviation(secondaryData),
-      min: Math.min(...secondaryData),
-      max: Math.max(...secondaryData),
+      mean: calculateMean(validSecondaryData),
+      median: calculateMedian(validSecondaryData),
+      stdDev: calculateStandardDeviation(validSecondaryData),
+      min: validSecondaryData.length ? Math.min(...validSecondaryData) : 0,
+      max: validSecondaryData.length ? Math.max(...validSecondaryData) : 0,
     },
-    correlation: calculateCorrelation(primaryData, secondaryData),
+    correlation,
+    regression: { slope, intercept, r2 },
+    outliers: {
+      primaryCount: primaryOutliers.indices.length,
+      secondaryCount: secondaryOutliers.indices.length
+    }
   };
-}, [primaryData, secondaryData]);
+}, [filteredData, filteredOutlierData, showOutliers, primaryVariable, secondaryVariable, regressionParams, primaryOutliers.indices, secondaryOutliers.indices]);
 
   // Generate automated insights based on statistics
   const generateInsights = useMemo(() => {
@@ -355,64 +896,6 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
   }));
 }, []);
 
-  // Function to get agent data when selected
-  const getAgentData = (agentId: string) => {
-    // This would normally fetch data from your API
-    // For now, we'll return mock data
-    return {
-      status: "Active",
-      currentActivity: "Working",
-      efficiency: 78,
-      tasksCompleted: 42,
-      performanceHistory: [
-        { day: "Day 1", efficiency: 65, productivity: 60 },
-        { day: "Day 2", efficiency: 68, productivity: 63 },
-        { day: "Day 3", efficiency: 72, productivity: 70 },
-        { day: "Day 4", efficiency: 75, productivity: 73 },
-        { day: "Day 5", efficiency: 78, productivity: 76 },
-      ],
-      metrics: {
-        efficiency: 78,
-        productivity: 76,
-        happiness: 82,
-        energy: 70,
-      },
-      analysis: [
-        "Agent shows consistent improvement in efficiency over time.",
-        "Productivity correlates strongly with happiness levels.",
-        "Performance is 12% above average compared to similar agents.",
-        "Recommended for complex tasks requiring sustained focus.",
-      ],
-      activities: [
-        { name: "Working", value: 65 },
-        { name: "Learning", value: 15 },
-        { name: "Socializing", value: 10 },
-        { name: "Resting", value: 10 },
-      ],
-      activityLog: [
-        { time: "09:00", activity: "Started work on task #1242", type: "work" },
-        { time: "10:30", activity: "Completed task #1242", type: "work" },
-        { time: "10:45", activity: "Coffee break", type: "rest" },
-        { time: "11:00", activity: "Meeting with team", type: "social" },
-        { time: "12:00", activity: "Lunch break", type: "rest" },
-        { time: "13:00", activity: "Started work on task #1243", type: "work" },
-        { time: "15:30", activity: "Learning session", type: "work" },
-      ],
-      interactions: [
-        { name: "Agent #12", positive: 8, negative: 1 },
-        { name: "Agent #23", positive: 5, negative: 0 },
-        { name: "Agent #34", positive: 3, negative: 2 },
-        { name: "Agent #45", positive: 7, negative: 0 },
-        { name: "Agent #56", positive: 4, negative: 1 },
-      ],
-      interactionInsights: [
-        "Most frequent interactions are with Agent #12 (9 total).",
-        "Highest positive interaction ratio with Agent #45 (100% positive).",
-        "Some friction detected with Agent #34 (40% negative interactions).",
-        "Overall positive interaction rate is 84.4%.",
-      ],
-    }
-  }
 
   return (
     // Asegúrate de que el contenedor principal use clases para el tema oscuro si es necesario
@@ -520,7 +1003,7 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
         </header>
 
         {/* Área de Contenido Principal (con scroll) */}
-        <main className="flex-1 overflow-y-auto p-6 dark:bg-gray-950">
+        <main className="flex-1 overflow-y-scroll scrollbar-hide p-6 dark:bg-gray-950">
           <div className="container mx-auto max-w-6xl">
             {/* Dashboard / Home */}
             {activeSection === "home" && (
@@ -534,30 +1017,103 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
                       <CardDescription className="dark:text-gray-400">Key performance metrics</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-muted/40 p-4 rounded-lg dark:bg-gray-700/40">
-                          <p className="text-sm text-muted-foreground dark:text-gray-400">Active Agents</p>
-                          <h3 className="text-2xl font-bold dark:text-white">247</h3> {/* Example value */}
-                          <p className="text-xs text-muted-foreground dark:text-gray-500">Last count</p>
-                        </div>
-                        <div className="bg-muted/40 p-4 rounded-lg dark:bg-gray-700/40">
-                          <p className="text-sm text-muted-foreground dark:text-gray-400">Average Efficiency</p>
-                          <h3 className="text-2xl font-bold dark:text-white">{averageEfficiency.toFixed(1)}%</h3>{" "}
-                          {/* Display calculated average */}
-                          <p className="text-xs text-muted-foreground dark:text-gray-500">Overall mean</p>
-                        </div>
-                        <div className="bg-muted/40 p-4 rounded-lg dark:bg-gray-700/40">
-                          <p className="text-sm text-muted-foreground dark:text-gray-400">Total Iterations</p>
-                          <h3 className="text-2xl font-bold dark:text-white">1,893</h3> {/* Example value */}
-                          <p className="text-xs text-muted-foreground dark:text-gray-500">Completed</p>
-                        </div>
-                        <div className="bg-muted/40 p-4 rounded-lg dark:bg-gray-700/40">
-                          <p className="text-sm text-muted-foreground dark:text-gray-400">Total Runtime</p>
-                          <h3 className="text-2xl font-bold dark:text-white">4.3h</h3> {/* Example value */}
-                          <p className="text-xs text-muted-foreground dark:text-gray-500">Since start</p>
-                        </div>
-                      </div>
-                    </CardContent>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Tarjeta 1: Bienestar Emocional */}
+    <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
+      <div>
+        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Bienestar Emocional</p>
+        <h3 className="text-2xl font-bold dark:text-white truncate">
+          {(() => {
+            // Convertir de -1...1 a porcentaje 0...100
+            const rawValues = simulationData.map(item => item.HappinessSadness || 0);
+            const value = calculateMean(rawValues);
+            const normalized = ((value + 1) / 2) * 100;
+            return isNaN(normalized) || !isFinite(normalized) ? "N/A" : `${normalized.toFixed(1)}%`;
+          })()}
+        </h3>
+      </div>
+      <p className="text-xs text-muted-foreground dark:text-gray-500 mt-2">
+        {calculateTrend(simulationData.map(item => item.HappinessSadness))}
+      </p>
+    </div>
+
+    {/* Tarjeta 2: Salud Económica */}
+    <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
+      <div>
+        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Salud Económica</p>
+        <h3 className="text-2xl font-bold dark:text-white truncate">
+          {(() => {
+            // Extraer valores explícitamente
+            const moneyValues = simulationData.map(item => Number(item.money) || 0);
+            const obligationValues = simulationData.map(item => 
+              (Number(item.toPay) || 0) + (Number(item.loanAmountToPay) || 0)
+            );
+            
+            const money = calculateMean(moneyValues);
+            const obligations = calculateMean(obligationValues);
+            
+            // Ajustar la fórmula para evitar siempre 100%
+            const ratio = obligations > 0 ? Math.min(100, (money / obligations) * 100) : 
+                                          (money > 0 ? 100 : 50); // 50% si no hay dinero ni obligaciones
+            
+            return isNaN(ratio) || !isFinite(ratio) ? "N/A" : `${ratio.toFixed(1)}%`;
+          })()}
+        </h3>
+      </div>
+      <p className="text-xs text-muted-foreground dark:text-gray-500 mt-2">
+        Relación entre ingresos y obligaciones financieras
+      </p>
+    </div>
+
+    {/* Tarjeta 3: Productividad Agrícola */}
+    <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
+      <div>
+        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Productividad Agrícola</p>
+        <h3 className="text-2xl font-bold dark:text-white truncate">
+          {(() => {
+            // Extraer correctamente y verificar que hay datos
+            const harvestValues = simulationData.map(item => Number(item.totalHarvestedWeight) || 0);
+            const harvest = calculateMean(harvestValues);
+            
+            // Ajustar la normalización a un valor más apropiado (100 en lugar de 1000)
+            const normalized = Math.min(100, (harvest / 100) * 100);
+            
+            return isNaN(normalized) || !isFinite(normalized) ? "N/A" : `${normalized.toFixed(1)}%`;
+          })()}
+        </h3>
+      </div>
+      <p className="text-xs text-muted-foreground dark:text-gray-500 mt-2">
+        {calculateTrend(simulationData.map(item => item.totalHarvestedWeight || 0))}
+      </p>
+    </div>
+
+    {/* Tarjeta 4: Sostenibilidad de Recursos */}
+    <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
+      <div>
+        <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">Sostenibilidad</p>
+        <h3 className="text-2xl font-bold dark:text-white truncate">
+          {(() => {
+            // Obtener el valor promedio de disponibilidad de agua
+            const waterValues = simulationData.map(item => Number(item.waterAvailable) || 0);
+            let value = calculateMean(waterValues);
+            
+            // Primero normalizar el valor a un porcentaje si es demasiado grande
+            if (value > 10) {
+              value = Math.min(value / 100000, 100);
+              return `${value.toFixed(1)}%`;
+            }
+            
+            // Si es un valor normal, mostrarlo como porcentaje
+            return `${(value * 100).toFixed(1)}%`;
+          })()}
+        </h3>
+      </div>
+      <p className="text-xs text-muted-foreground dark:text-gray-500 mt-2">
+        Disponibilidad de agua y recursos críticos
+      </p>
+    </div>
+  </div>
+</CardContent>
                   </Card>
 
                   {/* Card for Simulation Overview Chart */}
@@ -615,7 +1171,7 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
                             {/* Línea y área para la eficiencia */}
                             <Area
                               type="monotone" // Tipo de curva suave
-                              dataKey="money" // Datos a mostrar
+                              dataKey="totalHarvestedWeight" // Datos a mostrar
                               stroke="#8884d8" // Color de la línea (ej. azul/púrpura)
                               fillOpacity={1} // Opacidad del relleno
                               fill="url(#colorEfficiencyArea)" // Usa el gradiente para el relleno
@@ -664,7 +1220,7 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
                       <ul className="list-disc pl-5 space-y-1 dark:text-gray-300">
                         <li>View detailed parameter analysis</li>
                         <li>Check individual agent status and activities</li>
-                        <li>Download raw or processed data for further analysis</li>
+                        <li>Analyze relationships and distributions between simulation variables</li>
                       </ul>
                     </div>
                   </CardContent>
@@ -711,6 +1267,7 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
                           className="dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-white"
                         >
                           Time Series Analysis
+
                         </TabsTrigger>
                       </TabsList>
 
@@ -831,58 +1388,65 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
 
                           <div className="h-96 w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                              <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.5} />
-                                <XAxis
-                                  type="number"
-                                  dataKey={primaryVariable}
-                                  name={availableVariables.find((v) => v.value === primaryVariable)?.label}
-                                  stroke="#888"
-                                  domain={["auto", "auto"]}
-                                  label={{
-                                    value: availableVariables.find((v) => v.value === primaryVariable)?.label,
-                                    position: "bottom",
-                                    fill: "#888",
-                                  }}
-                                />
-                                <YAxis
-                                  type="number"
-                                  dataKey={secondaryVariable}
-                                  name={availableVariables.find((v) => v.value === secondaryVariable)?.label}
-                                  stroke="#888"
-                                  domain={["auto", "auto"]}
-                                  label={{
-                                    value: availableVariables.find((v) => v.value === secondaryVariable)?.label,
-                                    angle: -90,
-                                    position: "left",
-                                    fill: "#888",
-                                  }}
-                                />
-                                <Tooltip
-                                  cursor={{ strokeDasharray: "3 3" }}
-                                  contentStyle={{
-                                    backgroundColor: "#1f2937",
-                                    border: "1px solid #374151",
-                                    borderRadius: "6px",
-                                    color: "#fff",
-                                  }}
-                                  formatter={(value, name) => [
-                                    value,
-                                    availableVariables.find((v) => v.value === name)?.label,
-                                  ]}
-                                />
-                                <Scatter name="Variables" data={filteredData} fill="#8884d8" />
-                                {showRegressionLine && (
-                                  <Line
-                                    type="linear"
-                                    dataKey={secondaryVariable}
-                                    stroke="#ff7300"
-                                    dot={false}
-                                    activeDot={false}
-                                    legendType="none"
-                                  />
-                                )}
-                              </ScatterChart>
+                              <div className="h-96 w-full">
+    <ResponsiveContainer width="100%" height="100%">
+      <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.5} />
+        <XAxis
+          type="number"
+          dataKey={primaryVariable}
+          name={availableVariables.find((v) => v.value === primaryVariable)?.label}
+          stroke="#888"
+          domain={['auto', 'auto']}
+          label={{
+            value: availableVariables.find((v) => v.value === primaryVariable)?.label,
+            position: "bottom",
+            fill: "#888",
+          }}
+        />
+        <YAxis
+          type="number"
+          dataKey={secondaryVariable}
+          name={availableVariables.find((v) => v.value === secondaryVariable)?.label}
+          stroke="#888"
+          domain={['auto', 'auto']}
+          label={{
+            value: availableVariables.find((v) => v.value === secondaryVariable)?.label,
+            angle: -90,
+            position: "left",
+            fill: "#888",
+          }}
+        />
+        <Tooltip
+          cursor={{ strokeDasharray: "3 3" }}
+          contentStyle={{
+            backgroundColor: "#1f2937",
+            border: "1px solid #374151",
+            borderRadius: "6px",
+            color: "#fff",
+          }}
+          formatter={(value, name) => [
+            value,
+            availableVariables.find((v) => v.value === name)?.label,
+          ]}
+        />
+        <Scatter name="Variables" data={filteredOutlierData} fill="#8884d8" />
+        {showRegressionLine && (
+          <Line
+            type="linear"
+            data={regressionLineData}
+            dataKey={secondaryVariable}
+            stroke="#ff7300"
+            strokeWidth={2}
+            dot={false}
+            activeDot={false}
+            legendType="none"
+            name="Línea de regresión"
+          />
+        )}
+      </ScatterChart>
+    </ResponsiveContainer>
+  </div>
                             </ResponsiveContainer>
                           </div>
 
@@ -951,6 +1515,57 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
                               </div>
                             </div>
                           </div>
+                          {/* Información de regresión (cuando está activada) */}
+                              {showRegressionLine && (
+                                <div className="mt-4 bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
+                                  <h4 className="text-md font-medium mb-3 dark:text-white">Análisis de Regresión</h4>
+                                  <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                      <p className="text-xs text-muted-foreground dark:text-gray-400">Ecuación</p>
+                                      <p className="text-sm font-medium dark:text-white">
+                                        y = {statistics.regression.slope.toFixed(4)}x + {statistics.regression.intercept.toFixed(4)}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground dark:text-gray-400">Valor R²</p>
+                                      <p className="text-sm font-medium dark:text-white">{statistics.regression.r2.toFixed(4)}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground dark:text-gray-400">Significancia</p>
+                                      <p className="text-sm font-medium dark:text-white">
+                                        {statistics.regression.r2 > 0.7 ? "Fuerte" : 
+                                        statistics.regression.r2 > 0.3 ? "Moderada" : "Débil"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Información de outliers (cuando están excluidos) */}
+                              {!showOutliers && (statistics.outliers.primaryCount > 0 || statistics.outliers.secondaryCount > 0) && (
+                                <div className="mt-4 bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
+                                  <h4 className="text-md font-medium mb-3 dark:text-white">Outliers Excluidos</h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <p className="text-xs text-muted-foreground dark:text-gray-400">
+                                        {availableVariables.find((v) => v.value === primaryVariable)?.label}
+                                      </p>
+                                      <p className="text-sm font-medium dark:text-white">
+                                        {statistics.outliers.primaryCount} outliers excluidos
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground dark:text-gray-400">
+                                        {availableVariables.find((v) => v.value === secondaryVariable)?.label}
+                                      </p>
+                                      <p className="text-sm font-medium dark:text-white">
+                                        {statistics.outliers.secondaryCount} outliers excluidos
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
 
                           {/* Automated Insights */}
                           <div className="mt-6">
@@ -1014,23 +1629,7 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
                               />
                             </div>
                           </div>
-                          <div className="mt-4">
-                            <Label
-                              htmlFor="confidence-interval"
-                              className="text-sm font-medium mb-2 block dark:text-white"
-                            >
-                              Confidence Interval: {confidenceInterval}%
-                            </Label>
-                            <Slider
-                              id="confidence-interval"
-                              min={80}
-                              max={99}
-                              step={1}
-                              value={[confidenceInterval]}
-                              onValueChange={(value) => setConfidenceInterval(value[0])}
-                              className="my-4"
-                            />
-                          </div>
+                          
                         </div>
 
                         {/* Distribution Chart */}
@@ -1097,7 +1696,7 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
                       <TabsContent value="time-series" className="space-y-4">
                         <div>
                           <p className="text-sm text-muted-foreground dark:text-gray-400">
-                            <TimeSeriesAnalysis data={simulationData} />
+                            <TimeSeriesAnalysis data={simulationData}/>
                           </p>
                         </div>
                       </TabsContent>
@@ -1126,14 +1725,6 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-                        <h3 className="text-lg font-medium mb-2 dark:text-white">Agent Filter</h3>
-                        <p className="mb-4 dark:text-gray-300">
-                          Search and filter agents based on their properties, status, and activities.
-                        </p>
-                        {/* AgentSearch component */}
-                      </div>
-
                       <div>
                         <h3 className="text-lg font-medium mb-4 dark:text-white">Agent Activity Summary</h3>
                         <div className="grid md:grid-cols-2 gap-4">
@@ -1228,36 +1819,49 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
                         </div>
                       </div>
 
-                      {/* Agent List */}
-                      <div className="mt-6">
-                        <h3 className="text-lg font-medium mb-4 dark:text-white">Available Agents</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {Array.from({ length: 6 }).map((_, index) => (
-                            <Card
-                              key={index}
-                              className="dark:bg-gray-800 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
-                              onClick={() => {
-                                setSelectedAgent(`${index + 1}`)
-                                setSelectedAgentData(getAgentData(`${index + 1}`))
-                              }}
-                            >
-                              <CardContent className="p-4">
-                                <div className="flex items-center space-x-3">
-                                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center dark:bg-blue-900/30">
-                                    <Users className="h-5 w-5 text-primary dark:text-blue-400" />
+                    {/* Agent List */}
+                    <div className="mt-6">
+                      <h3 className="text-lg font-medium mb-4 dark:text-white">Agentes Disponibles</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {agentsData.length === 0 ? (
+                          <p className="text-muted-foreground dark:text-gray-400 col-span-3">Cargando agentes...</p>
+                        ) : (
+                          agentsData.map((agent, index) => {
+                            // Extraer datos del CSV o usar valores predeterminados
+                            const agentName = agent.id;
+                            const familyNumber = index + 1;
+                            
+                            return (
+                              <Card
+                                key={agent.id}
+                                className="dark:bg-gray-800 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
+                                onClick={() => {
+                                  setSelectedAgent(`${familyNumber}`);
+                                  setSelectedAgentData(getAgentData(`${familyNumber}`));
+                                }}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="h-10 w-10 rounded-full flex items-center justify-center dark:bg-blue-900/30">
+                                      <Users className="h-5 w-5 text-green-500" />
+                                    </div>
+                                    <div>
+                                      <h4 className="font-medium dark:text-white">Familia {familyNumber}</h4>
+                                      <div className="flex items-center">
+                                        <span className="w-2 h-2 rounded-full text-green-500 mr-2"></span>
+                                        <p className="text-xs text-muted-foreground dark:text-gray-400">
+                                          {agentName}
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <h4 className="font-medium dark:text-white">Agent #{index + 1}</h4>
-                                    <p className="text-xs text-muted-foreground dark:text-gray-400">
-                                      {index % 3 === 0 ? "Active" : index % 3 === 1 ? "Idle" : "Terminated"}
-                                    </p>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })
+                        )}
                       </div>
+                    </div>
                     </CardContent>
                     <CardFooter className="border-t border-border pt-4 flex justify-between dark:border-gray-700">
                       <Button
@@ -1267,13 +1871,6 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
                       >
                         Back to statistics
                       </Button>
-                      <Button
-                        onClick={() => setActiveSection("download")}
-                        className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
-                      >
-                        Export Data
-                        <ChevronRight className="ml-2 h-4 w-4" />
-                      </Button>
                     </CardFooter>
                   </Card>
                 )}
@@ -1282,202 +1879,6 @@ const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
           </div>
         </main>
       </div>
-    </div>
-  )
-}
-
-import {
-  Card as AgentCard,
-  CardContent as AgentCardContent,
-  CardDescription as AgentCardDescription,
-  CardHeader as AgentCardHeader,
-  CardTitle as AgentCardTitle,
-  CardFooter as AgentCardFooter,
-} from "@/components/ui/card"
-
-interface AgentDetailViewProps {
-  agentId: string
-  agentData: any
-  onBack: () => void
-  averageEfficiency: number
-}
-
-const AgentDetailView: React.FC<AgentDetailViewProps> = ({ agentId, agentData, onBack, averageEfficiency }) => {
-  if (!agentData) {
-    return <div>Loading agent data...</div>
-  }
-
-  return (
-    <div className="space-y-6">
-      <Button
-        variant="outline"
-        onClick={onBack}
-        className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
-      >
-        <ChevronRight className="mr-2 h-4 w-4 rotate-180" />
-        Back to Agents
-      </Button>
-
-      <AgentCard className="dark:bg-gray-800 dark:border-gray-700">
-        <AgentCardHeader>
-          <AgentCardTitle className="dark:text-white">
-            Agent #{agentId} - {agentData.status}
-          </AgentCardTitle>
-          <AgentCardDescription className="dark:text-gray-400">
-            Detailed information and performance metrics
-          </AgentCardDescription>
-        </AgentCardHeader>
-        <AgentCardContent className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Basic Information */}
-            <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-              <h4 className="text-md font-medium mb-3 dark:text-white">Basic Information</h4>
-              <p className="text-sm text-muted-foreground dark:text-gray-400">
-                Current Activity: {agentData.currentActivity}
-              </p>
-              <p className="text-sm text-muted-foreground dark:text-gray-400">
-                Tasks Completed: {agentData.tasksCompleted}
-              </p>
-            </div>
-
-            {/* Key Metrics */}
-            <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-              <h4 className="text-md font-medium mb-3 dark:text-white">Key Metrics</h4>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-xs text-muted-foreground dark:text-gray-400">Efficiency</p>
-                  <p className="text-sm font-medium dark:text-white">{agentData.metrics.efficiency}%</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground dark:text-gray-400">Productivity</p>
-                  <p className="text-sm font-medium dark:text-white">{agentData.metrics.productivity}%</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground dark:text-gray-400">Happiness</p>
-                  <p className="text-sm font-medium dark:text-white">{agentData.metrics.happiness}%</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground dark:text-gray-400">Energy</p>
-                  <p className="text-sm font-medium dark:text-white">{agentData.metrics.energy}%</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Performance History Chart */}
-          <div className="bg-card border border-border rounded-lg p-6 dark:bg-gray-800 dark:border-gray-700">
-            <h4 className="text-md font-medium mb-3 dark:text-white">Performance History</h4>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={agentData.performanceHistory} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis dataKey="day" stroke="#888" />
-                  <YAxis stroke="#888" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#1f2937",
-                      border: "1px solid #374151",
-                      borderRadius: "6px",
-                      color: "#fff",
-                    }}
-                  />
-                  <Legend wrapperStyle={{ color: "#ccc" }} />
-                  <Line type="monotone" dataKey="efficiency" stroke="#8884d8" name="Efficiency" />
-                  <Line type="monotone" dataKey="productivity" stroke="#82ca9d" name="Productivity" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Activity Summary */}
-          <div className="bg-card border border-border rounded-lg p-6 dark:bg-gray-800 dark:border-gray-700">
-            <h4 className="text-md font-medium mb-3 dark:text-white">Activity Summary</h4>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={agentData.activities}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {agentData.activities.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#333",
-                      border: "none",
-                      color: "#fff",
-                    }}
-                    labelStyle={{ color: "#ddd" }}
-                    itemStyle={{ color: "#fff" }}
-                  />
-                  <Legend wrapperStyle={{ color: "#ccc" }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Activity Log */}
-          <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-            <h4 className="text-md font-medium mb-3 dark:text-white">Activity Log</h4>
-            <ul className="space-y-2">
-              {agentData.activityLog.map((log, index) => (
-                <li key={index} className="text-sm dark:text-gray-300">
-                  <span className="font-medium">{log.time}</span> - {log.activity}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Interactions */}
-          <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-            <h4 className="text-md font-medium mb-3 dark:text-white">Interactions with Other Agents</h4>
-            <ul className="space-y-2">
-              {agentData.interactions.map((interaction, index) => (
-                <li key={index} className="text-sm dark:text-gray-300">
-                  {interaction.name} - Positive: {interaction.positive}, Negative: {interaction.negative}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Interaction Insights */}
-          <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-            <h4 className="text-md font-medium mb-3 dark:text-white">Interaction Insights</h4>
-            <ul className="space-y-2">
-              {agentData.interactionInsights.map((insight, index) => (
-                <li key={index} className="text-sm dark:text-gray-300">
-                  {insight}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Analysis and Recommendations */}
-          <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-            <h4 className="text-md font-medium mb-3 dark:text-white">Analysis and Recommendations</h4>
-            <ul className="list-disc pl-5 space-y-2 dark:text-gray-300">
-              {agentData.analysis.map((analysis, index) => (
-                <li key={index}>{analysis}</li>
-              ))}
-            </ul>
-          </div>
-        </AgentCardContent>
-        <AgentCardFooter className="border-t border-border pt-4 flex justify-end dark:border-gray-700">
-          <Button
-            onClick={onBack}
-            className="dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
-          >
-            Close
-          </Button>
-        </AgentCardFooter>
-      </AgentCard>
     </div>
   )
 }
