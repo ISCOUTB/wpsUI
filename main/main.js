@@ -25,7 +25,7 @@ let mainWindow;
 let splash;
 
 const createWindow = () => {
-  // Crear la ventana del splash
+  // 1) Ventana splash
   splash = new BrowserWindow({
     width: 400,
     height: 300,
@@ -36,20 +36,12 @@ const createWindow = () => {
     show: true,
   });
 
-  // Determinar la ubicación del archivo splash.html
-  let splashPath;
-  if (app.isPackaged) {
-    // En producción
-    splashPath = path.join(__dirname, "splash.html");
-  } else {
-    // En desarrollo
-    splashPath = path.join(__dirname, "../main/splash.html");
-  }
-
-  console.log("Ruta del splash:", splashPath); // Útil para depuración
+  const splashPath = app.isPackaged
+    ? path.join(__dirname, "splash.html")
+    : path.join(__dirname, "../main/splash.html");
   splash.loadFile(splashPath);
 
-  // Crear la ventana principal
+  // 2) Ventana principal
   mainWindow = new BrowserWindow({
     width: 1920,
     height: 1080,
@@ -62,16 +54,37 @@ const createWindow = () => {
     },
   });
 
+  // — Eliminar menú por defecto (File, Edit, View, Window, Help)
+  Menu.setApplicationMenu(null);
+
+  // — Bloquear atajos de DevTools EN PRODUCCIÓN
+  if (!isDev) {
+    mainWindow.webContents.on("before-input-event", (event, input) => {
+      const key = input.key.toLowerCase();
+      const ctrlOrCmd = process.platform === "darwin" ? input.meta : input.control;
+      // Ctrl/Cmd+Shift+I or F12 or Cmd+Opt+I (macOS)
+      if (
+        (ctrlOrCmd && input.shift && key === "i") ||
+        input.key === "F12" ||
+        (process.platform === "darwin" && input.meta && input.alt && key === "i")
+      ) {
+        event.preventDefault();
+      }
+    });
+  }
+
+  // 3) Carga de contenido según entorno
   if (app.isPackaged) {
     appServe(mainWindow).then(() => {
       mainWindow.loadURL("app://-");
     });
   } else {
     mainWindow.loadURL("http://localhost:3000");
-    Menu.setApplicationMenu(null);
+    // — Solo en desarrollo: abrir DevTools
     mainWindow.webContents.openDevTools();
   }
 
+  // 4) Mostrar la ventana principal cuando esté lista
   mainWindow.once("ready-to-show", () => {
     splash.destroy();
     mainWindow.show();
@@ -79,6 +92,8 @@ const createWindow = () => {
 };
 
 app.on("ready", createWindow);
+
+// ---------------------- IPC y gestión de procesos Java ----------------------
 
 let javaProcess;
 
@@ -88,12 +103,10 @@ ipcMain.handle("execute-exe", async (event, exePath, args) => {
       if (error) {
         reject(stderr || error.message);
       } else {
-        if(mainWindow) {
-          mainWindow.webContents.send("simulation-ended");
-        }
+        mainWindow?.webContents.send("simulation-ended");
         resolve(stdout);
       }
-      javaProcess = null; // Resetear la referencia al proceso
+      javaProcess = null;
     });
   });
 });
@@ -108,7 +121,9 @@ ipcMain.handle("delete-file", async (_, filePath) => {
 });
 
 ipcMain.handle("get-app-path", async () => {
-  return app.isPackaged ? app.getAppPath() + ".unpacked" : app.getAppPath();
+  return app.isPackaged
+    ? app.getAppPath() + ".unpacked"
+    : app.getAppPath();
 });
 
 ipcMain.handle("clear-csv", async () => {
@@ -130,73 +145,63 @@ ipcMain.handle("read-csv", async () => {
       ? path.join(app.getAppPath(), "../src/wps/logs/wpsSimulator.csv")
       : path.join(__dirname, "../src/wps/logs/wpsSimulator.csv");
 
-    console.log("Ruta generada para el archivo CSV:", basePath); // Log para depuración
-
     if (!fs.existsSync(basePath)) {
-      console.error("Archivo CSV no encontrado en la ruta:", basePath);
       return { success: false, error: "Archivo no encontrado" };
     }
 
     const data = fs.readFileSync(basePath, "utf-8");
     if (!data.trim()) {
-      console.error("Archivo CSV vacío en la ruta:", basePath);
       return { success: false, error: "Archivo CSV vacío" };
     }
 
-    console.log("Datos leídos del archivo CSV:", data); // Log para verificar el contenido
     return { success: true, data };
   } catch (error) {
-    console.error("Error leyendo el archivo CSV:", error);
     return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle("file-exists", async (event, filePath) => {
+ipcMain.handle("file-exists", async (_, filePath) => {
   return fs.existsSync(filePath);
 });
 
 ipcMain.handle("kill-java-process", async () => {
-  if (javaProcess) {
-    try {
-      if (app.isPackaged) {
-        execFile("taskkill", ["/pid", javaProcess.pid, "/f", "/t"], () => {});
-      } else {
-        exec("taskkill /IM java.exe /F", () => {});
-      }
-      // Resetear la referencia al proceso
-      javaProcess = null;
-      if (mainWindow) {
-        mainWindow.webContents.send("simulation-ended");
-      }
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  } else {
+  if (!javaProcess) {
     return { success: false, message: "No hay proceso Java activo" };
+  }
+  try {
+    if (app.isPackaged) {
+      execFile("taskkill", ["/pid", javaProcess.pid, "/f", "/t"]);
+    } else {
+      exec("taskkill /IM java.exe /F");
+    }
+    javaProcess = null;
+    mainWindow?.webContents.send("simulation-ended");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 });
 
 ipcMain.handle("check-java-process", async () => {
-  return { running: !!javaProcess };
+  return { running: Boolean(javaProcess) };
 });
 
-// Agregar este manejador para cerrar el proceso Java cuando se cierra la aplicación
+// — Al cerrar ventanas, también cerramos el proceso Java si existe
 app.on("window-all-closed", () => {
   if (javaProcess) {
     try {
       if (app.isPackaged) {
-        execFile("taskkill", ["/pid", javaProcess.pid, "/f", "/t"], () => {});
+        execFile("taskkill", ["/pid", javaProcess.pid, "/f", "/t"]);
       } else {
-        exec("taskkill /IM java.exe /F", () => {});
+        exec("taskkill /IM java.exe /F");
       }
-      javaProcess = null;
     } catch (error) {
       console.error("Error al cerrar proceso Java:", error);
     }
+    javaProcess = null;
   }
-
   if (process.platform !== "darwin") {
     app.quit();
   }
 });
+app

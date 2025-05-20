@@ -1,8 +1,12 @@
-"use client"
+"use client";
 
 import React, { useEffect, useState } from "react";
 import { Home, PieChart, Settings, Mail, Download } from "lucide-react";
-import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import { toast } from "@/components/ui/use-toast";
@@ -14,8 +18,7 @@ const Sidebar: React.FC = () => {
   const router = useRouter();
   const [isSimulationRunning, setIsSimulationRunning] = useState(false);
 
-
- useEffect(() => {
+  useEffect(() => {
     const handler = () => {
       toast({
         variant: "default",
@@ -56,7 +59,8 @@ const Sidebar: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Data Simulation",
-        description: "Wait until the end of the simulation to start another one .",
+        description:
+          "Wait until the end of the simulation to start another one .",
         action: <ToastAction altText="Got it">Got it</ToastAction>,
       });
       return;
@@ -78,7 +82,11 @@ const Sidebar: React.FC = () => {
       onClick: handleSettingsClick,
     },
     { icon: <Mail size={20} />, label: "Contact Us", href: "/pages/contact" },
-    { icon: <Download size={20} />, label: "Download", href: "/pages/dataExport" },
+    {
+      icon: <Download size={20} />,
+      label: "Download",
+      href: "/pages/dataExport",
+    },
   ];
 
   return (
@@ -91,14 +99,14 @@ const Sidebar: React.FC = () => {
       </div>
 
       {/* Menú de ítems */}
-      <nav className="flex-1">
+      <nav className="flex-1  items-center border-t border-[#ffff] flex flex-col px-4 py-6 space-y-4">
         <TooltipProvider>
           {menuItems.map((item, index) => (
             <Tooltip key={index}>
               <TooltipTrigger asChild>
                 <a
                   href={item.href}
-                  className="flex items-center py-8 px-4 text-foreground hover:text-[#2664eb] rounded transition-colors font-clash text-white"
+                  className="w-full flex items-center  bg-[#153c8f] border-[#2664eb] justify-center py-3 px-4 text-foreground hover:text-[##153c8f] rounded-lg transition-colors font-clash text-white hover:bg-[#2664eb] hover:shadow-lg"
                   onClick={item.onClick}
                 >
                   {item.icon}
@@ -112,7 +120,13 @@ const Sidebar: React.FC = () => {
 
       {/* Imagen en la parte inferior */}
       <div className="mt-auto flex justify-center p-4">
-        <Image src="/UTB.png" alt="WellProdSimulator" width={300} height={200} className="object-contain" />
+        <Image
+          src="/UTB.png"
+          alt="WellProdSimulator"
+          width={300}
+          height={200}
+          className="object-contain"
+        />
       </div>
     </div>
   );
