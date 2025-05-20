@@ -45,81 +45,40 @@ export function TimeSeriesAnalysis({ data }: { data: any[] }) {
   const [selectedVariable, setSelectedVariable] = useState<string>(
     floatVariables[0].key
   );
-  const [showMovingAverage, setShowMovingAverage] = useState(true);
-  const [showTrend, setShowTrend] = useState(true);
+  
+  // Nuevos estados para los switches más útiles
+  const [showDataPoints, setShowDataPoints] = useState(false);
+  const [showStatRange, setShowStatRange] = useState(false);
 
   // Extraer valores para la variable seleccionada
   const variableData = useMemo(() => {
     return data.map((item) => item[selectedVariable] as number);
   }, [data, selectedVariable]);
 
-  // Calcular la media móvil (moving average)
-  // Calcular la media móvil (moving average)
-const calculateMovingAverage = (data: number[], windowSize = 5): number[] => {
-  const result: number[] = [];
-  for (let i = 0; i < data.length; i++) {
-    if (i < windowSize - 1) {
-      // Para los primeros puntos donde no tenemos suficientes datos
-      // podemos usar un promedio parcial en lugar de NaN
-      if (i > 0) {
-        let sum = 0;
-        let count = 0;
-        for (let j = 0; j <= i; j++) {
-          if (!isNaN(data[i - j])) {
-            sum += data[i - j];
-            count++;
-          }
-        }
-        result.push(count > 0 ? sum / count : NaN);
-      } else {
-        result.push(data[i]); // Para el primer punto, usamos su valor actual
-      }
-    } else {
-      // Calculamos el promedio con manejo de NaN
-      let sum = 0;
-      let count = 0;
-      for (let j = 0; j < windowSize; j++) {
-        if (!isNaN(data[i - j])) {
-          sum += data[i - j];
-          count++;
-        }
-      }
-      result.push(count > 0 ? sum / count : NaN);
+  // Calcular la línea de tendencia (regresión lineal simple)
+  const calculateTrendLine = (data: number[]): { slope: number; intercept: number } => {
+    // Validación de datos
+    const validData = data.filter(val => !isNaN(val) && val !== null && val !== undefined);
+    
+    if (validData.length < 2) {
+      return { slope: 0, intercept: 0 };
     }
-  }
-  return result;
-};
+    
+    const n = validData.length;
+    const indices = Array.from({ length: n }, (_, i) => i);
 
-  // Calcular la línea de tendencia (regresión lineal simple)
-  // Calcular la línea de tendencia (regresión lineal simple)
-const calculateTrendLine = (data: number[]): { slope: number; intercept: number } => {
-  // Validación de datos
-  const validData = data.filter(val => !isNaN(val) && val !== null && val !== undefined);
-  
-  if (validData.length < 2) {
-    return { slope: 0, intercept: 0 };
-  }
-  
-  const n = validData.length;
-  const indices = Array.from({ length: n }, (_, i) => i);
+    const sumX = indices.reduce((sum, x) => sum + x, 0);
+    const sumY = validData.reduce((sum, y) => sum + y, 0);
+    const sumXY = indices.reduce((sum, x, i) => sum + x * validData[i], 0);
+    const sumXX = indices.reduce((sum, x) => sum + x * x, 0);
 
-  const sumX = indices.reduce((sum, x) => sum + x, 0);
-  const sumY = validData.reduce((sum, y) => sum + y, 0);
-  const sumXY = indices.reduce((sum, x, i) => sum + x * validData[i], 0);
-  const sumXX = indices.reduce((sum, x) => sum + x * x, 0);
+    // Evitar división por cero
+    const denominator = (n * sumXX - sumX * sumX);
+    const slope = denominator !== 0 ? (n * sumXY - sumX * sumY) / denominator : 0;
+    const intercept = (sumY - slope * sumX) / n;
 
-  // Evitar división por cero
-  const denominator = (n * sumXX - sumX * sumX);
-  const slope = denominator !== 0 ? (n * sumXY - sumX * sumY) / denominator : 0;
-  const intercept = (sumY - slope * sumX) / n;
-
-  return { slope, intercept };
-};
-
-  // Calcular media móvil
-  const movingAverageData = useMemo(() => {
-    return calculateMovingAverage(variableData, 5);
-  }, [variableData]);
+    return { slope, intercept };
+  };
 
   // Calcular línea de tendencia
   const trendLine = useMemo(() => {
@@ -130,6 +89,33 @@ const calculateTrendLine = (data: number[]): { slope: number; intercept: number 
   const trendData = useMemo(() => {
     return data.map((_, i) => trendLine.intercept + trendLine.slope * i);
   }, [data, trendLine]);
+
+  // Calcular el rango estadístico (media ± desviación estándar)
+  const statRange = useMemo(() => {
+    // Filtrar valores válidos
+    const validData = variableData.filter(val => !isNaN(val));
+    
+    if (validData.length < 2) return { upper: [], lower: [] };
+    
+    // Calcular media y desviación estándar
+    const mean = validData.reduce((sum, val) => sum + val, 0) / validData.length;
+    const squaredDiffs = validData.map(val => Math.pow(val - mean, 2));
+    const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / validData.length;
+    const stdDev = Math.sqrt(variance);
+    
+    // Crear arrays para los límites superior e inferior
+    const upper = data.map((_, i) => {
+      const val = data[i][selectedVariable];
+      return !isNaN(val) ? val + stdDev : null;
+    });
+    
+    const lower = data.map((_, i) => {
+      const val = data[i][selectedVariable];
+      return !isNaN(val) ? val - stdDev : null;
+    });
+    
+    return { upper, lower };
+  }, [data, selectedVariable, variableData]);
 
   // Analizar tendencia
   const trendAnalysis = useMemo(() => {
@@ -161,33 +147,32 @@ const calculateTrendLine = (data: number[]): { slope: number; intercept: number 
   }, [variableData]);
 
   // Calcular volatilidad
-  // Calcular volatilidad
-const volatility = useMemo(() => {
-  // Filtrar valores válidos
-  const validData = variableData.filter(val => !isNaN(val) && val !== null && val !== undefined);
-  
-  if (validData.length < 2) {
-    return { level: "Unknown", value: 0 };
-  }
-  
-  const mean = validData.reduce((sum, val) => sum + val, 0) / validData.length;
-  
-  // Evitar división por cero
-  if (mean === 0) {
-    return { level: "Unknown", value: 0 };
-  }
-  
-  const squaredDiffs = validData.map(val => Math.pow(val - mean, 2));
-  const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / validData.length;
-  const stdDev = Math.sqrt(variance);
-  const cv = Math.abs(stdDev / mean); // Valor absoluto para evitar CV negativo
-  
-  let level = "Low";
-  if (cv > 0.3) level = "High";
-  else if (cv > 0.1) level = "Moderate";
-  
-  return { level, value: cv };
-}, [variableData]);
+  const volatility = useMemo(() => {
+    // Filtrar valores válidos
+    const validData = variableData.filter(val => !isNaN(val) && val !== null && val !== undefined);
+    
+    if (validData.length < 2) {
+      return { level: "Unknown", value: 0 };
+    }
+    
+    const mean = validData.reduce((sum, val) => sum + val, 0) / validData.length;
+    
+    // Evitar división por cero
+    if (mean === 0) {
+      return { level: "Unknown", value: 0 };
+    }
+    
+    const squaredDiffs = validData.map(val => Math.pow(val - mean, 2));
+    const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / validData.length;
+    const stdDev = Math.sqrt(variance);
+    const cv = Math.abs(stdDev / mean); // Valor absoluto para evitar CV negativo
+    
+    let level = "Low";
+    if (cv > 0.3) level = "High";
+    else if (cv > 0.1) level = "Moderate";
+    
+    return { level, value: cv };
+  }, [variableData]);
 
   // Calcular estadísticas de cambio
   const changeStats = useMemo(() => {
@@ -197,7 +182,7 @@ const volatility = useMemo(() => {
     const secondHalf = variableData.slice(Math.floor(variableData.length / 2));
     const firstHalfMean = firstHalf.reduce((sum, val) => sum + val, 0) / firstHalf.length;
     const secondHalfMean = secondHalf.reduce((sum, val) => sum + val, 0) / secondHalf.length;
-    const percentChange = ((secondHalfMean - firstHalfMean) / firstHalfMean) * 100;
+    const percentChange = firstHalfMean !== 0 ? ((secondHalfMean - firstHalfMean) / Math.abs(firstHalfMean)) * 100 : 0;
     
     return { percentChange, firstHalfMean, secondHalfMean };
   }, [variableData]);
@@ -206,28 +191,31 @@ const volatility = useMemo(() => {
   const extremes = useMemo(() => {
     if (variableData.length === 0) return { max: 0, min: 0, maxIndex: -1, minIndex: -1 };
     
-    const max = Math.max(...variableData);
-    const min = Math.min(...variableData);
+    const validData = variableData.filter(val => !isNaN(val));
+    if (validData.length === 0) return { max: 0, min: 0, maxIndex: -1, minIndex: -1 };
+    
+    const max = Math.max(...validData);
+    const min = Math.min(...validData);
     const maxIndex = variableData.indexOf(max);
     const minIndex = variableData.indexOf(min);
     
     return { max, min, maxIndex, minIndex };
   }, [variableData]);
 
-  // Agrega este useMemo justo después de definir "extremes"
-const chartData = useMemo(() => {
-  if (!variableData || variableData.length === 0 || !movingAverageData || !trendData) {
-    return [];
-  }
-  
-  // Combinar los datos originales con los datos calculados
-  return data.map((item, index) => ({
-    ...item,
-    [selectedVariable]: item[selectedVariable],
-    movingAverage: movingAverageData[index],
-    trendLine: trendData[index]
-  }));
-}, [data, selectedVariable, movingAverageData, trendData, variableData]);
+  // Datos para el gráfico con nuevas series
+  const chartData = useMemo(() => {
+    if (!variableData || variableData.length === 0) {
+      return [];
+    }
+    
+    return data.map((item, index) => ({
+      ...item,
+      [selectedVariable]: item[selectedVariable],
+      trendLine: trendData[index],
+      upperRange: showStatRange ? statRange.upper[index] : undefined,
+      lowerRange: showStatRange ? statRange.lower[index] : undefined
+    }));
+  }, [data, selectedVariable, trendData, variableData, showStatRange, statRange]);
 
   // Obtener etiqueta para la variable
   const getLabel = (key: string): string => {
@@ -268,109 +256,132 @@ const chartData = useMemo(() => {
               </SelectContent>
             </Select>
           </div>
+          
+          {/* Nuevo switch: Mostrar puntos de datos */}
           <div className="flex items-center space-x-2">
-            <Switch id="moving-average" checked={showMovingAverage} onCheckedChange={setShowMovingAverage} />
-            <Label htmlFor="moving-average" className="dark:text-white">
-              Show Moving Average (5-day)
+            <Switch 
+              id="show-data-points" 
+              checked={showDataPoints} 
+              onCheckedChange={setShowDataPoints} 
+            />
+            <Label htmlFor="show-data-points" className="dark:text-white">
+              Show Data Points
             </Label>
           </div>
+          
+          {/* Nuevo switch: Mostrar rango estadístico */}
           <div className="flex items-center space-x-2">
-            <Switch id="trend-line" checked={showTrend} onCheckedChange={setShowTrend} />
-            <Label htmlFor="trend-line" className="dark:text-white">
-              Show Trend Line
+            <Switch 
+              id="show-stat-range" 
+              checked={showStatRange} 
+              onCheckedChange={setShowStatRange} 
+            />
+            <Label htmlFor="show-stat-range" className="dark:text-white">
+              Show Statistical Range
             </Label>
           </div>
         </div>
 
         <div className="h-80 w-full">
-  <ResponsiveContainer width="100%" height="100%">
-    <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-      <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.5} />
-      <XAxis 
-        dataKey="name" 
-        stroke="#888"
-        label={{
-          value: "Time",
-          position: "bottom",
-          fill: "#888",
-          offset: 0,
-        }}
-      />
-      <YAxis 
-        stroke="#888"
-        label={{
-          value: getLabel(selectedVariable),
-          angle: -90,
-          position: "left",
-          fill: "#888",
-        }}
-      />
-      <Tooltip 
-        contentStyle={{
-          backgroundColor: "#1f2937",
-          border: "1px solid #374151",
-          borderRadius: "6px",
-          color: "#fff",
-        }}
-        formatter={(value, name, props) => {
-          if (name === "movingAverage") return [isNaN(value) ? "N/A" : value.toFixed(2), "5-day Moving Average"];
-          if (name === "trendLine") return [isNaN(value) ? "N/A" : value.toFixed(2), "Trend Line"];
-          if (name === selectedVariable) return [isNaN(value) ? "N/A" : value.toFixed(2), getLabel(selectedVariable)];
-          return [value, name];
-        }}
-      />
-      <Legend wrapperStyle={{ color: "#ccc" }} />
-      <defs>
-        <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor={getColor(selectedVariable)} stopOpacity={0.8} />
-          <stop offset="95%" stopColor={getColor(selectedVariable)} stopOpacity={0.1} />
-        </linearGradient>
-      </defs>
-      <Area
-        type="monotone"
-        dataKey={selectedVariable}
-        stroke={getColor(selectedVariable)}
-        fillOpacity={1}
-        fill="url(#colorGradient)"
-        name={getLabel(selectedVariable)}
-        isAnimationActive={true}
-      />
-      
-      {/* Línea de promedio móvil con mejor visibilidad */}
-      {showMovingAverage && (
-        <Line
-          type="monotone"
-          dataKey="movingAverage"
-          stroke="#ff7300"
-          strokeWidth={3}
-          dot={false}
-          activeDot={false}
-          name="Moving Average"
-          connectNulls={true}
-          isAnimationActive={true}
-        />
-      )}
-      
-      {/* Línea de tendencia con mejor visibilidad */}
-      {showTrend && (
-        <Line
-          type="linear"
-          dataKey="trendLine"
-          stroke="#82ca9d"
-          strokeWidth={3}
-          strokeDasharray="5 5"
-          dot={false}
-          activeDot={false}
-          name="Trend Line"
-          connectNulls={true}
-          isAnimationActive={true}
-        />
-      )}
-    </AreaChart>
-  </ResponsiveContainer>
-</div>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.5} />
+              <XAxis 
+                dataKey="name" 
+                stroke="#888"
+                label={{
+                  value: "Time",
+                  position: "bottom",
+                  fill: "#888",
+                  offset: 0,
+                }}
+              />
+              <YAxis 
+                stroke="#888"
+                label={{
+                  value: getLabel(selectedVariable),
+                  angle: -90,
+                  position: "left",
+                  fill: "#888",
+                }}
+              />
+              <Tooltip 
+                contentStyle={{
+                  backgroundColor: "#1f2937",
+                  border: "1px solid #374151",
+                  borderRadius: "6px",
+                  color: "#fff",
+                }}
+                formatter={(value, name, props) => {
+                  if (name === "trendLine") return [isNaN(value) ? "N/A" : value.toFixed(2), "Trend Line"];
+                  if (name === "upperRange") return [isNaN(value) ? "N/A" : value.toFixed(2), "Upper Bound (+1σ)"];
+                  if (name === "lowerRange") return [isNaN(value) ? "N/A" : value.toFixed(2), "Lower Bound (-1σ)"];
+                  if (name === selectedVariable) return [isNaN(value) ? "N/A" : value.toFixed(2), getLabel(selectedVariable)];
+                  return [value, name];
+                }}
+              />
+              <Legend wrapperStyle={{ color: "#ccc" }} />
+              <defs>
+                <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={getColor(selectedVariable)} stopOpacity={0.8} />
+                  <stop offset="95%" stopColor={getColor(selectedVariable)} stopOpacity={0.1} />
+                </linearGradient>
+              </defs>
+              
+              {/* Mostrar rango estadístico cuando está activado */}
+              {showStatRange && (
+                <>
+                  <Area
+                    type="monotone"
+                    dataKey="upperRange"
+                    stroke="transparent"
+                    fill={getColor(selectedVariable)}
+                    fillOpacity={0.2}
+                    activeDot={false}
+                    name="Upper Bound"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="lowerRange"
+                    stroke="transparent"
+                    fillOpacity={0}
+                    activeDot={false}
+                    name="Lower Bound"
+                  />
+                </>
+              )}
+              
+              {/* Línea principal de datos con puntos opcionales */}
+              <Area
+                type="monotone"
+                dataKey={selectedVariable}
+                stroke={getColor(selectedVariable)}
+                fillOpacity={1}
+                fill="url(#colorGradient)"
+                name={getLabel(selectedVariable)}
+                isAnimationActive={true}
+                dot={showDataPoints} // Mostrar puntos si showDataPoints es true
+                activeDot={{ r: 6, stroke: getColor(selectedVariable), fill: "#fff" }}
+              />
+              
+              {/* Línea de tendencia siempre visible */}
+              <Line
+                type="linear"
+                dataKey="trendLine"
+                stroke="#82ca9d"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                activeDot={false}
+                name="Trend Line"
+                connectNulls={true}
+                isAnimationActive={true}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
 
-        {/* Añadimos las métricas de análisis */}
+        {/* Métricas de análisis */}
         <div className="grid md:grid-cols-3 gap-4">
           <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
             <p className="text-xs text-muted-foreground dark:text-gray-400">Trend Analysis</p>
@@ -395,7 +406,7 @@ const chartData = useMemo(() => {
           </div>
         </div>
 
-        {/* Añadimos el resumen de insights */}
+        {/* Resumen de insights */}
         <Alert className="dark:bg-gray-700/30 dark:border-gray-600">
           <AlertDescription>
             <ul className="list-disc pl-5 space-y-1 dark:text-gray-300">

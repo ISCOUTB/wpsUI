@@ -122,6 +122,11 @@ export default function Analytics() {
     { name: "Idle", value: 0 },
     { name: "Terminated", value: 0 },
   ]);
+
+  // Al inicio del componente Analytics, añade estos estados:
+const [agentLastUpdate, setAgentLastUpdate] = useState<Record<string, number>>({});
+const [simulationActive, setSimulationActive] = useState(true);
+const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para considerar inactivo
   interface AgentState {
     peasantLeisureAffinity?: number;
     peasantFriendsAffinity?: number;
