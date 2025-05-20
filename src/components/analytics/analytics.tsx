@@ -67,6 +67,7 @@ import type { ParameterType } from "@/lib/parameter-config";
 
 import { TimeSeriesAnalysis } from "@/components/analytics/analysis/time-series-analysis";
 import { AgentDetailView } from "@/components/analytics/agent/agent-detail-view";
+import { DistributionAnalysis } from "@/components/analytics/analysis/distribution-analysis"; // Añade esta línea
 import { icon } from "leaflet";
 const floatVariables = [
   { key: "HappinessSadness", color: "#DA4453" },
@@ -173,40 +174,55 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
       };
 
       socket.onmessage = (event) => {
-        const prefix = event.data.substring(0, 2);
-        const data = event.data.substring(2);
+  const prefix = event.data.substring(0, 2);
+  const data = event.data.substring(2);
 
-        switch (prefix) {
-          case "j=":
-            try {
-              console.log("Recibiendo datos j=");
-              const jsonData = JSON.parse(data);
-              const { name, taskLog, state } = jsonData;
+  // Marcar la simulación como activa siempre que lleguen mensajes
+  setSimulationActive(true);
 
-              // CORRECCIÓN: Guardar tanto taskLog como state en una estructura anidada
-              if (name) {
-                console.log(
-                  `Recibiendo datos para ${name} con ${Object.keys(taskLog || {}).length} fechas`
-                );
-                setAgentTaskLogs((prev) => ({
-                  ...prev,
-                  [name]: { taskLog, state }, // Esta es la estructura correcta
-                }));
+  switch (prefix) {
+    case "j=":
+      try {
+        console.log("Recibiendo datos j=");
+        const jsonData = JSON.parse(data);
+        const { name, taskLog, state } = jsonData;
 
-                // Añadir el agente a la lista si no existe
-                setLoadedAgents((prev) => {
-                  if (!prev.includes(name)) {
-                    return [...prev, name];
-                  }
-                  return prev;
-                });
-              }
-            } catch (error) {
-              console.error("Error al procesar datos del agente:", error);
+        if (name) {
+          // Guardar la hora actual como última actualización para este agente
+          setAgentLastUpdate(prev => ({
+            ...prev,
+            [name]: Date.now()
+          }));
+          
+          // Resto de la lógica existente...
+          setAgentTaskLogs((prev) => ({
+            ...prev,
+            [name]: { taskLog, state },
+          }));
+
+          setLoadedAgents((prev) => {
+            if (!prev.includes(name)) {
+              return [...prev, name];
             }
-            break;
+            return prev;
+          });
         }
-      };
+      } catch (error) {
+        console.error("Error al procesar datos del agente:", error);
+      }
+      break;
+      
+    // Caso para detectar fin de simulación explícitamente
+    case "e=": // "e" de "end"
+      try {
+        console.log("Fin de simulación detectado");
+        setSimulationActive(false);
+      } catch (error) {
+        console.error("Error al procesar fin de simulación:", error);
+      }
+      break;
+  }
+};
       socket.onclose = () => {
         console.log("WebSocket desconectado");
         setTimeout(connectWebSocket, 2000);
@@ -445,52 +461,64 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
 
   // Agrega esta función dentro del componente Analytics
   const calculateAgentActivitySummary = () => {
-    // Contadores para cada estado
-    let working = 0;
-    let idle = 0;
-    let terminated = 0;
+  // Contadores para cada estado
+  let working = 0;
+  let idle = 0;
+  let terminated = 0;
+  
+  const now = Date.now();
 
-    // Recorre todos los agentes cargados
-    loadedAgents.forEach((agentName) => {
-      const agentInfo = agentTaskLogs[agentName] || {};
-      let agentStateData: AgentState = {};
-
-      try {
-        if (agentInfo.state) {
-          if (typeof agentInfo.state === "string") {
-            agentStateData = JSON.parse(agentInfo.state);
-          } else {
-            agentStateData = agentInfo.state;
-          }
+  // Recorre todos los agentes cargados
+  loadedAgents.forEach((agentName) => {
+    const agentInfo = agentTaskLogs[agentName] || {};
+    let agentStateData = {};
+    
+    try {
+      if (agentInfo.state) {
+        if (typeof agentInfo.state === 'string') {
+          agentStateData = JSON.parse(agentInfo.state);
+        } else {
+          agentStateData = agentInfo.state;
         }
-      } catch (error) {
-        console.error("Error parseando state para resumen:", error);
       }
-
-      // Determinar el estado del agente basado en sus datos
-      const health = agentStateData.health || 70;
-      const currentActivity = agentStateData.currentActivity || "";
-
-      if (health < 20) {
-        terminated++;
-      } else if (
-        currentActivity.includes("IDLE") ||
-        currentActivity === "Unknown" ||
-        currentActivity === ""
-      ) {
-        idle++;
-      } else {
-        working++;
-      }
-    });
-
-    // Actualizar el estado con los nuevos valores
-    setActivityData([
-      { name: "Working", value: working },
-      { name: "Idle", value: idle },
-      { name: "Terminated", value: terminated },
-    ]);
-  };
+    } catch (error) {
+      console.error("Error parseando state para resumen:", error);
+    }
+    
+    // Determinar el estado del agente basado en sus datos
+    const health = agentStateData.health || 70;
+    const currentActivity = agentStateData.currentActivity || "";
+    const lastUpdateTime = agentLastUpdate[agentName] || 0;
+    
+    // Criterios para marcar un agente como terminado:
+    // 1. Salud muy baja (agente muerto)
+    // 2. Simulación inactiva (no se reciben más datos)
+    // 3. No se ha actualizado este agente específico en mucho tiempo
+    const isTerminated = 
+      health <= 10 || 
+      !simulationActive || 
+      (now - lastUpdateTime > TIMEOUT_THRESHOLD && lastUpdateTime > 0);
+    
+    if (isTerminated) {
+      terminated++;
+    } else if (
+      currentActivity.includes("IDLE") ||
+      currentActivity === "Unknown" ||
+      currentActivity === ""
+    ) {
+      idle++;
+    } else {
+      working++;
+    }
+  });
+  
+  // Actualizar el estado con los nuevos valores
+  setActivityData([
+    { name: "Working", value: working },
+    { name: "Idle", value: idle },
+    { name: "Terminated", value: terminated },
+  ]);
+};
   // Agregar este nuevo useEffect
   useEffect(() => {
     // Calcular resumen de actividad inicial
@@ -601,6 +629,28 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
     setTimeRange(newRange);
     setIsTimeRangeSet(true);
   };
+
+  // Añadir este useEffect para verificar periódicamente la actividad
+useEffect(() => {
+  const checkSimulationActivity = () => {
+    const now = Date.now();
+    
+    // Si no hay actualizaciones recientes para ningún agente, marcar simulación como inactiva
+    const hasRecentUpdates = Object.values(agentLastUpdate).some(
+      timestamp => (now - timestamp) < TIMEOUT_THRESHOLD
+    );
+    
+    if (!hasRecentUpdates && Object.keys(agentLastUpdate).length > 0) {
+      setSimulationActive(false);
+    }
+  };
+  
+  const intervalId = setInterval(checkSimulationActivity, 5000);
+  
+  return () => {
+    clearInterval(intervalId);
+  };
+}, [agentLastUpdate]);
 
   const [selectedType, setSelectedType] = useState<ParameterType>("integer");
   const [selectedParameter, setSelectedParameter] = useState("currentActivity");
@@ -835,12 +885,12 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
     if (xDenominator === 0 || yDenominator === 0) return 0;
     return numerator / Math.sqrt(xDenominator * yDenominator);
   };
-  // Filter data based on time range
+  
   const filteredData = useMemo(() => {
     return simulationData.slice(timeRange[0], timeRange[1] + 1);
   }, [timeRange]);
 
-  // Detectar outliers usando el método IQR
+  
   const detectOutliers = (
     data: number[]
   ): { indices: number[]; lowerBound: number; upperBound: number } => {
@@ -848,7 +898,7 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
 
     const sortedData = [...data].sort((a, b) => a - b);
 
-    // Encuentra Q1 y Q3 (cuartiles)
+    
     const q1Index = Math.floor(sortedData.length * 0.25);
     const q3Index = Math.floor(sortedData.length * 0.75);
 
@@ -2020,134 +2070,9 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
                       </TabsContent>
 
                       {/* Distribution Analysis Tab */}
-                      <TabsContent value="distribution" className="space-y-4">
-                        <div className="bg-muted/30 p-4 rounded-lg dark:bg-gray-700/30">
-                          <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                              <Label
-                                htmlFor="distribution-variable"
-                                className="text-sm font-medium mb-2 block dark:text-white"
-                              >
-                                Variable to Analyze
-                              </Label>
-                              <Select
-                                value={primaryVariable}
-                                onValueChange={setPrimaryVariable}
-                              >
-                                <SelectTrigger
-                                  id="distribution-variable"
-                                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                >
-                                  <SelectValue placeholder="Select variable" />
-                                </SelectTrigger>
-                                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                                  {availableVariables.map((variable) => (
-                                    <SelectItem
-                                      key={variable.value}
-                                      value={variable.value}
-                                      className="dark:text-white dark:focus:bg-gray-700"
-                                    >
-                                      {variable.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label
-                                htmlFor="bins"
-                                className="text-sm font-medium mb-2 block dark:text-white"
-                              >
-                                Number of Bins: {distributionBins}
-                              </Label>
-                              <Slider
-                                id="bins"
-                                min={5}
-                                max={20}
-                                step={1}
-                                value={[distributionBins]}
-                                onValueChange={(value) =>
-                                  setDistributionBins(value[0])
-                                }
-                                className="my-4"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Distribution Chart */}
-                        <div className="bg-card border border-border rounded-lg p-6 dark:bg-gray-800 dark:border-gray-700">
-                          <div className="mb-4">
-                            <h3 className="text-lg font-medium dark:text-white">
-                              Distribution of{" "}
-                              {
-                                availableVariables.find(
-                                  (v) => v.value === primaryVariable
-                                )?.label
-                              }
-                            </h3>
-                            <p className="text-sm text-muted-foreground dark:text-gray-400">
-                              Histogram showing the frequency distribution
-                            </p>
-                          </div>
-
-                          <div className="h-96 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart
-                                data={(() => {
-                                  // Create histogram data
-                                  const min = Math.min(...primaryData);
-                                  const max = Math.max(...primaryData);
-                                  const binWidth =
-                                    (max - min) / distributionBins;
-
-                                  const bins = Array.from(
-                                    { length: distributionBins },
-                                    (_, i) => {
-                                      const binStart = min + i * binWidth;
-                                      const binEnd = binStart + binWidth;
-                                      const count = primaryData.filter(
-                                        (val) => val >= binStart && val < binEnd
-                                      ).length;
-
-                                      return {
-                                        bin: `${binStart.toFixed(1)}-${binEnd.toFixed(1)}`,
-                                        count,
-                                        binStart,
-                                        binEnd,
-                                      };
-                                    }
-                                  );
-
-                                  return bins;
-                                })()}
-                                margin={{
-                                  top: 5,
-                                  right: 30,
-                                  left: 20,
-                                  bottom: 5,
-                                }}
-                              >
-                                <CartesianGrid
-                                  strokeDasharray="3 3"
-                                  stroke="#333"
-                                />
-                                <XAxis dataKey="bin" stroke="#888" />
-                                <YAxis stroke="#888" />
-                                <Tooltip
-                                  contentStyle={{
-                                    backgroundColor: "#1f2937",
-                                    border: "1px solid #374151",
-                                    borderRadius: "6px",
-                                    color: "#fff",
-                                  }}
-                                />
-                                <Bar dataKey="count" fill="#8884d8" />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                      </TabsContent>
+                <TabsContent value="distribution" className="space-y-4">
+                  <DistributionAnalysis data={filteredData} />
+                </TabsContent>
 
                       {/* Time Series Analysis Tab */}
                       <TabsContent value="time-series" className="space-y-4">
@@ -2337,96 +2262,83 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
                             <p className="text-muted-foreground dark:text-gray-400 col-span-3">
                               Loading agents...
                             </p>
-                          ) : (
-                            loadedAgents.map((agentName, index) => {
-                              // Extraer datos del agente desde el WebSocket
-                              const agentInfo = agentTaskLogs[agentName] || {};
-                              let agentStatus = "Active";
-
-                              try {
-                                // Determinar el estado basado en los datos del agente
-                                let agentStateData: AgentState = {};
-                                if (agentInfo.state) {
-                                  if (typeof agentInfo.state === "string") {
-                                    agentStateData = JSON.parse(
-                                      agentInfo.state
-                                    );
-                                  } else {
-                                    agentStateData = agentInfo.state;
+                            ) : (
+                              loadedAgents.map((agentName, index) => {
+                                // Extraer datos del agente desde el WebSocket
+                                const agentInfo = agentTaskLogs[agentName] || {};
+                                let agentStatus = "Active";
+                                
+                                try {
+                                  // Determinar el estado basado en los datos del agente
+                                  let agentStateData: AgentState = {};
+                                  if (agentInfo.state) {
+                                    if (typeof agentInfo.state === 'string') {
+                                      agentStateData = JSON.parse(agentInfo.state);
+                                    } else {
+                                      agentStateData = agentInfo.state;
+                                    }
                                   }
+                                  
+                                  const health = agentStateData.health || 70;
+                                  const lastUpdateTime = agentLastUpdate[agentName] || 0;
+                                  const now = Date.now();
+                                  
+                                  // Criterios para determinar el estado
+                                  if (health <= 10 || !simulationActive || (now - lastUpdateTime > TIMEOUT_THRESHOLD && lastUpdateTime > 0)) {
+                                    agentStatus = "Terminated";
+                                  } else if (health < 30) {
+                                    agentStatus = "Critical";
+                                  } else if (health < 60) {
+                                    agentStatus = "Struggling";
+                                  } else {
+                                    agentStatus = "Active";
+                                  }
+                                } catch (error) {
+                                  console.error("Error procesando estado del agente:", error);
                                 }
-
-                                const health = agentStateData.health || 70;
-                                agentStatus =
-                                  health < 30
-                                    ? "Critical"
-                                    : health < 60
-                                      ? "Struggling"
-                                      : "Active";
-                              } catch (error) {
-                                console.error(
-                                  "Error procesando estado del agente:",
-                                  error
-                                );
-                              }
-
-                              return (
-                                <Card
-                                  key={agentName}
-                                  className="dark:bg-gray-800 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
-                                  onClick={() => {
-                                    setSelectedAgent(`${index + 1}`);
-                                  }}
-                                >
-                                  <CardContent className="p-4">
-                                    <div className="flex items-center space-x-3">
-                                      <div
-                                        className={`h-10 w-10 rounded-full flex items-center justify-center 
-                            ${
-                              agentStatus === "Active"
-                                ? "dark:bg-green-900/30"
-                                : agentStatus === "Struggling"
-                                  ? "dark:bg-yellow-900/30"
-                                  : "dark:bg-red-900/30"
-                            }`}
-                                      >
-                                        <Users
-                                          className={`h-5 w-5 
-                              ${
-                                agentStatus === "Active"
-                                  ? "text-green-500"
-                                  : agentStatus === "Struggling"
-                                    ? "text-yellow-500"
-                                    : "text-red-500"
-                              }`}
-                                        />
-                                      </div>
-                                      <div>
-                                        <h4 className="font-medium dark:text-white">
-                                          Familia {index + 1}
-                                        </h4>
-                                        <div className="flex items-center">
-                                          <span
-                                            className={`w-2 h-2 rounded-full mr-2
-                                ${
-                                  agentStatus === "Active"
-                                    ? "bg-green-500"
-                                    : agentStatus === "Struggling"
-                                      ? "bg-yellow-500"
-                                      : "bg-red-500"
-                                }`}
-                                          ></span>
-                                          <p className="text-xs text-muted-foreground dark:text-gray-400">
-                                            {agentName}
-                                          </p>
+                                
+                                return (
+                                  <Card
+                                    key={agentName}
+                                    className="dark:bg-gray-800 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
+                                    onClick={() => {
+                                      setSelectedAgent(`${index + 1}`);
+                                    }}
+                                  >
+                                    <CardContent className="p-4">
+                                      <div className="flex items-center space-x-3">
+                                        <div className={`h-10 w-10 rounded-full flex items-center justify-center 
+                                          ${agentStatus === "Active" ? "dark:bg-green-900/30" : 
+                                            agentStatus === "Struggling" ? "dark:bg-yellow-900/30" :
+                                            agentStatus === "Critical" ? "dark:bg-red-900/30" :
+                                            "dark:bg-gray-900/30"}`}>
+                                          <Users className={`h-5 w-5 
+                                            ${agentStatus === "Active" ? "text-green-500" : 
+                                              agentStatus === "Struggling" ? "text-yellow-500" :
+                                              agentStatus === "Critical" ? "text-red-500" :
+                                              "text-gray-500"}`} />
+                                        </div>
+                                        <div>
+                                          <h4 className="font-medium dark:text-white">
+                                            Family {index + 1}
+                                          </h4>
+                                          <div className="flex items-center">
+                                            <span className={`w-2 h-2 rounded-full mr-2
+                                              ${agentStatus === "Active" ? "bg-green-500" : 
+                                                agentStatus === "Struggling" ? "bg-yellow-500" :
+                                                agentStatus === "Critical" ? "bg-red-500" :
+                                                "bg-gray-500"}`}></span>
+                                            <p className="text-xs text-muted-foreground dark:text-gray-400">
+                                              {agentName} {agentStatus === "Terminated" ? "(Terminated)" : ""}
+                                            </p>
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              );
-                            })
-                          )}
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })
+                            )}
                         </div>
                       </div>
                     </CardContent>
