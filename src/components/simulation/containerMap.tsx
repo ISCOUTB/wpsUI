@@ -29,12 +29,15 @@ const SimulationMap: React.FC = () => {
   const [specificLandColor, setSpecificLandColor] = useState<string>("#F5DEB3");
   const [specificLandNames, setSpecificLandNames] = useState<string[]>([]);
   const [specificSeason, setSpecificSeason] = useState<string[]>([]);
+  const [isSimulationActive, setIsSimulationActive] = useState<boolean>(false);
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
+  const [mapLoadError, setMapLoadError] = useState<string | null>(null);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey:
       process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
-      "AIzaSyAXbjhnWqg-0oLtD2K2LaHpsQzAuYJ0UmE",
+      "AIzaSyBGHkUam3bywuBiZJFkvq8NckU1OdfBAzI",
   });
 
   useEffect(() => {
@@ -80,20 +83,36 @@ const SimulationMap: React.FC = () => {
 
   const onLoad = React.useCallback(
     (map: google.maps.Map) => {
-      const bounds = new window.google.maps.LatLngBounds();
-      mapData.forEach((finca) => {
-        finca.coordinates.forEach((coord) => {
-          bounds.extend(new google.maps.LatLng(coord[0], coord[1]));
+      try {
+        const bounds = new window.google.maps.LatLngBounds();
+        mapData.forEach((finca) => {
+          finca.coordinates.forEach((coord) => {
+            bounds.extend(new google.maps.LatLng(coord[0], coord[1]));
+          });
         });
-      });
-      map.fitBounds(bounds);
-      mapRef.current = map;
+        map.fitBounds(bounds);
+        mapRef.current = map;
+        setIsMapInitialized(true);
+      } catch (error) {
+        console.error("Error initializing map:", error);
+        setMapLoadError("Error initializing map");
+      }
     },
     [mapData]
   );
-
+  useEffect(() => {
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+      if (mapRef.current) {
+        mapRef.current = undefined;
+      }
+    };
+  }, []);
   const onUnmount = React.useCallback(() => {
     mapRef.current = undefined;
+    setIsMapInitialized(false);
   }, []);
 
   const connectWebSocket = () => {
@@ -123,16 +142,26 @@ const SimulationMap: React.FC = () => {
       switch (prefix) {
         case "q=":
           let number = parseInt(data, 10);
-          setAgentData(() => {
-            const newAgentData = [];
-            for (let i = 1; i <= number; i++) {
-              newAgentData.push({
-                name_agent: `MAS_500PeasantFamily${i}`,
-                lands: [],
-              });
-            }
-            return newAgentData;
+          requestAnimationFrame(() => {
+            setIsSimulationActive(true);
+            setAgentData(() => {
+              const newAgentData = [];
+              for (let i = 1; i <= number; i++) {
+                newAgentData.push({
+                  name_agent: `MAS_500PeasantFamily${i}`,
+                  lands: [],
+                });
+              }
+              return newAgentData;
+            });
           });
+          break;
+        case "e= ":
+          if (data === "end") {
+            setIsSimulationActive(false);
+            setSpecificLandNames([]);
+            setSpecificSeason([]);
+          }
           break;
       }
     };
@@ -185,27 +214,31 @@ const SimulationMap: React.FC = () => {
     };
     connectWebSocket2();
 
-    //repetir cada 5 segundos
-    const interval = setInterval(() => {
-      const landNames: string[] = [];
-      const seasonNames: string[] = [];
-      agentData.forEach((agent) => {
-        agent.lands.forEach((land) => {
-          landNames.push(land.name);
-          seasonNames.push(land.current_season);
+    if (isSimulationActive) {
+      const interval = setInterval(() => {
+        const landNames: string[] = [];
+        const seasonNames: string[] = [];
+        agentData.forEach((agent) => {
+          agent.lands.forEach((land) => {
+            landNames.push(land.name);
+            seasonNames.push(land.current_season);
+          });
         });
-      });
-      setSpecificLandNames(landNames);
-      setSpecificSeason(seasonNames);
-    }, 1000);
-  }, [agentData]);
+        setSpecificLandNames(landNames);
+        setSpecificSeason(seasonNames);
+      }, 1000);
+
+      // Limpiar el intervalo cuando el componente se desmonta o la simulación termina
+      return () => clearInterval(interval);
+    }
+  }, [agentData, isSimulationActive]);
 
   const renderPolygons = () => {
     return mapData
       .filter((finca) => filters.length === 0 || filters.includes(finca.kind))
       .map((fincaData, index) => {
         let fillColor;
-        if (specificLandNames.includes(fincaData.name)) {
+        if (isSimulationActive && specificLandNames.includes(fincaData.name)) {
           switch (specificSeason[specificLandNames.indexOf(fincaData.name)]) {
             case "PREPARATION":
               fillColor = "#FFD700"; // Dorado

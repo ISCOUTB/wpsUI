@@ -51,6 +51,10 @@ const createWindow = () => {
       preload: path.join(__dirname, "/preload/preload.mjs"),
       nodeIntegration: true,
       contextIsolation: true,
+      webSecurity: true,
+      sandbox: false,
+      allowRunningInsecureContent: false,
+      experimentalFeatures: false,
     },
   });
 

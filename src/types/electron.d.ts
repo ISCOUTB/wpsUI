@@ -1,4 +1,9 @@
 export interface ElectronAPI {
+  localStorage: {
+    getItem: (key: string) => string | null;
+    setItem: (key: string, value: string) => void;
+    removeItem: (key: string) => void;
+  };
   readCsv: () => Promise<{ success: boolean; data?: string; error?: string }>;
   deleteFile: (path: string) => Promise<{ success: boolean; error?: string }>;
   executeExe: (exePath: string, args: string[]) => Promise<string>;

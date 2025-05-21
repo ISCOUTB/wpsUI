@@ -1,6 +1,15 @@
+import { getTicks } from "@visx/scale";
 import { contextBridge, ipcRenderer } from "electron";
+import { Key } from "lucide-react";
 
 contextBridge.exposeInMainWorld("electronAPI", {
+
+localStorage: {
+ geitItem: (Key) => localStorage.getItem(Key),
+ setItem: (Key, value) => localStorage.setItem(Key, value),
+  removeItem: (Key) => localStorage.removeItem(Key),
+
+},
   readCsv: () => ipcRenderer.invoke("read-csv"),
   deleteFile: (path) => ipcRenderer.invoke("delete-file", path),
   checkJavaProcess: () => ipcRenderer.invoke("check-java-process"),

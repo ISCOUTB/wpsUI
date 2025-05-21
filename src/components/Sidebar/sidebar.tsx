@@ -91,14 +91,12 @@ const Sidebar: React.FC = () => {
 
   return (
     <div className="bg-[#171c1f] text-foreground w-88 flex flex-col h-full">
-      {/* Encabezado del sidebar */}
       <div className="p-4">
         <h1 className="text-2xl font-clash font-bold bg-[#2664eb] rounded-lg p-4 flex items-center justify-center">
           WellProdSimulator
         </h1>
       </div>
 
-      {/* Menú de ítems */}
       <nav className="flex-1  items-center border-t border-[#ffff] flex flex-col px-4 py-6 space-y-4">
         <TooltipProvider>
           {menuItems.map((item, index) => (
@@ -121,11 +119,11 @@ const Sidebar: React.FC = () => {
       {/* Imagen en la parte inferior */}
       <div className="mt-auto flex justify-center p-4">
         <Image
-          src="/UTB.png"
+          src="/images/logo.svg"
           alt="WellProdSimulator"
           width={300}
           height={200}
-          className="object-contain"
+          className="w-64 h-64 object-contain"
         />
       </div>
     </div>
