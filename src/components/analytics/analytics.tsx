@@ -347,23 +347,22 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
 
     // Crear análisis basado en los datos
     const analysis = [
-      `Salud actual: ${health}%`,
-      `Dinero disponible: $${money.toLocaleString()}`,
+      `Current health: ${health}%`,
+      `Available money: $${money.toLocaleString()}`,
       happiness > 70
-        ? "Estado emocional positivo"
+        ? "Positive emotional state"
         : happiness > 40
-          ? "Estado emocional neutral"
-          : "Estado emocional negativo",
+          ? "Neutral emotional state"
+          : "Negative emotional state",
       waterAvailable > 1000
-        ? "Recursos hídricos abundantes"
-        : "Recursos hídricos limitados",
-    ];
+        ? "Abundant water resources"
+        : "Limited water resources",
+];
 
-    // Crear insights de interacción social
     const interactionInsights = [
-      `Afinidad familiar: ${((agentStateData.peasantFamilyAffinity || 0) * 100).toFixed(1)}%`,
-      `Afinidad con amigos: ${((agentStateData.peasantFriendsAffinity || 0) * 100).toFixed(1)}%`,
-      `Afinidad con ocio: ${((agentStateData.peasantLeisureAffinity || 0) * 100).toFixed(1)}%`,
+      `Family affinity: ${((agentStateData.peasantFamilyAffinity || 0) * 100).toFixed(1)}%`,
+      `Friends affinity: ${((agentStateData.peasantFriendsAffinity || 0) * 100).toFixed(1)}%`,
+      `Leisure affinity: ${((agentStateData.peasantLeisureAffinity || 0) * 100).toFixed(1)}%`,
     ];
 
     return {

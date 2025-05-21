@@ -83,20 +83,20 @@ const SimulationMap: React.FC = () => {
 
   const onLoad = React.useCallback(
     (map: google.maps.Map) => {
-      try {
-        const bounds = new window.google.maps.LatLngBounds();
-        mapData.forEach((finca) => {
-          finca.coordinates.forEach((coord) => {
-            bounds.extend(new google.maps.LatLng(coord[0], coord[1]));
-          });
+      const bounds = new window.google.maps.LatLngBounds();
+      mapData.forEach((finca) => {
+        finca.coordinates.forEach((coord) => {
+          bounds.extend(new google.maps.LatLng(coord[0], coord[1]));
         });
-        map.fitBounds(bounds);
-        mapRef.current = map;
-        setIsMapInitialized(true);
-      } catch (error) {
-        console.error("Error initializing map:", error);
-        setMapLoadError("Error initializing map");
-      }
+      });
+      map.fitBounds(bounds);
+      mapRef.current = map;
+  
+      // Hacer zoom in después de ajustar los límites
+      setTimeout(() => {
+        const currentZoom = map.getZoom();
+        map.setZoom(currentZoom + 0.8); // Puedes ajustar el +2 según lo que necesites
+      }, 500); // Espera breve para asegurar que fitBounds termine
     },
     [mapData]
   );

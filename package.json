@@ -1,7 +1,7 @@
 {
-  "name": "wellprodsim",
+  "name": "WellProdSim",
   "version": "0.1.0",
-  "description": "Social Simulator used to estimate productivity and well-being of peasant families. It is event oriented, high concurrency, heterogeneous time management and emotional reasoning BDI.",
+  "description": "WellProdSim",
   "keywords": [
     "electron",
     "next",
@@ -17,7 +17,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"magenta,cyan\" --kill-others \"next dev\" \"electron .\"",
-    "build": "delete.bat && next build && electron-builder && modules.bat && makensis installer.nsi",
+    "build": "delete.bat && next build && electron-builder && modules.bat",
     "start": "next start",
     "electron": "electron .",
     "postinstall": "electron-builder install-app-deps",
@@ -85,6 +85,7 @@
     "tailwindcss": "^3.4.13",
     "tailwindcss-animate": "^1.0.7",
     "wellprodsim": "file:",
+    "WellProdSim": "file:",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -129,7 +130,7 @@
       "target": [
         "dir"
       ],
-      "icon": "resources/icon.ico"
+      "icon": "Icon.ico"
     },
     "linux": {
       "target": [
