@@ -294,10 +294,10 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
     );
     console.log("TaskLog keys:", Object.keys(taskLog));
 
-    // Procesar el taskLog para ordenarlo cronológicamente
+    
     const activityLog = processTaskLog(taskLog);
 
-    // Analizar el state del agente como AgentState
+    
     let agentStateData: AgentState = {};
     try {
       if (agentInfo.state) {
@@ -1244,7 +1244,7 @@ useEffect(() => {
         {/* Logo UTB en la parte inferior */}
         <div className="mt-auto flex justify-center p-4">
           <Image
-            src="/UTB.png"
+            src="/imagess/logo.svg"
             alt="WellProdSimulator"
             width={400}
             height={300}

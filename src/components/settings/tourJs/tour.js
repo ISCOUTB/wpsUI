@@ -37,110 +37,110 @@ export const startSettingsTour = () => {
     console.log("Elementos listos, iniciando tour...")
 
     const driverObj = driver({
-      showProgress: true,
-      steps: [
-        {
-          element: "#config-agents",
-          popover: {
-            title: "Número de Agentes",
-            description:
-              "Define cuántos agentes campesinos participarán en la simulación. Más agentes significa interacciones más complejas.",
-            side: "right",
-            align: "start",
-          },
-        },
-        {
-          element: "#config-money",
-          popover: {
-            title: "Dinero Inicial",
-            description:
-              "Define el capital inicial para cada agente. Esto afecta sus capacidades iniciales de inversión.",
-            side: "left",
-            align: "start",
-          },
-        },
-        {
-          element: "#config-land",
-          popover: {
-            title: "Tierra",
-            description:
-              "Define la cantidad de tierra disponible para cultivar. Más tierra permite plantar más cultivos.",
-            side: "right",
-            align: "start",
-          },
-        },
-        {
-          element: "#config-personality",
-          popover: {
-            title: "Personalidad",
-            description:
-              "Define los rasgos de personalidad para cada agente. Esto afecta su toma de decisiones e interacciones.",
-            side: "left",
-            align: "start",
-          },
-        },
-        {
-          element: "#config-tools",
-          popover: {
-            title: "Herramientas",
-            description:
-              "Define la cantidad de herramientas agrícolas disponibles. Más herramientas permiten una agricultura más rápida y eficiente.",
-            side: "left",
-            align: "start",
-          },
-        },
-        {
-          element: "#config-seeds",
-          popover: {
-            title: "Semillas",
-            description:
-              "Define la cantidad de semillas disponibles para plantar. Más semillas permiten plantar más cultivos.",
-            side: "left",
-            align: "start",
-          },
-        },
-        {
-          element: "#config-water",
-          popover: {
-            title: "Agua",
-            description:
-              "Define la cantidad de agua disponible para riego. Más agua permite un mejor crecimiento de los cultivos.",
-            side: "left",
-            align: "start",
-          },
-        },
-        {
-          element: "#config-irrigation",
-          popover: {
-            title: "Irrigación",
-            description:
-              "Define el nivel de irrigación disponible. Una mejor irrigación permite un uso más eficiente del agua.",
-            side: "left",
-            align: "start",
-          },
-        },
-        {
-          element: "#config-emotions",
-          popover: {
-            title: "Emociones",
-            description:
-              "Define el estado emocional de cada agente. Esto afecta su toma de decisiones e interacciones.",
-            side: "left",
-            align: "start",
-          },
-        },
-        {
-          element: "#config-years",
-          popover: {
-            title: "Años",
-            description:
-              "Define el número de años que durará la simulación. Más años permiten desarrollar estrategias a largo plazo.",
-            side: "left",
-            align: "start",
-          },
-        },
-      ],
-    })
+  showProgress: true,
+  steps: [
+    {
+      element: "#config-agents",
+      popover: {
+        title: "Number of Agents",
+        description:
+          "Define how many farmer agents will participate in the simulation. More agents mean more complex interactions.",
+        side: "right",
+        align: "start",
+      },
+    },
+    {
+      element: "#config-money",
+      popover: {
+        title: "Initial Money",
+        description:
+          "Define the initial capital for each agent. This affects their initial investment capabilities.",
+        side: "left",
+        align: "start",
+      },
+    },
+    {
+      element: "#config-land",
+      popover: {
+        title: "Land",
+        description:
+          "Define the amount of land available for cultivation. More land allows for planting more crops.",
+        side: "right",
+        align: "start",
+      },
+    },
+    {
+      element: "#config-personality",
+      popover: {
+        title: "Personality",
+        description:
+          "Define personality traits for each agent. This affects their decision-making and interactions.",
+        side: "left",
+        align: "start",
+      },
+    },
+    {
+      element: "#config-tools",
+      popover: {
+        title: "Tools",
+        description:
+          "Define the amount of agricultural tools available. More tools allow for faster and more efficient farming.",
+        side: "left",
+        align: "start",
+      },
+    },
+    {
+      element: "#config-seeds",
+      popover: {
+        title: "Seeds",
+        description:
+          "Define the amount of seeds available for planting. More seeds allow for planting more crops.",
+        side: "left",
+        align: "start",
+      },
+    },
+    {
+      element: "#config-water",
+      popover: {
+        title: "Water",
+        description:
+          "Define the amount of water available for irrigation. More water allows for better crop growth.",
+        side: "left",
+        align: "start",
+      },
+    },
+    {
+      element: "#config-irrigation",
+      popover: {
+        title: "Irrigation",
+        description:
+          "Define the level of irrigation available. Better irrigation allows for more efficient water usage.",
+        side: "left",
+        align: "start",
+      },
+    },
+    {
+      element: "#config-emotions",
+      popover: {
+        title: "Emotions",
+        description:
+          "Define the emotional state of each agent. This affects their decision-making and interactions.",
+        side: "left",
+        align: "start",
+      },
+    },
+    {
+      element: "#config-years",
+      popover: {
+        title: "Years",
+        description:
+          "Define the number of years the simulation will run. More years allow for developing long-term strategies.",
+        side: "left",
+        align: "start",
+      },
+    },
+  ],
+})
 
     try {
       driverObj.drive()
