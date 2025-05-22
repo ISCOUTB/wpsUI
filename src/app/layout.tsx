@@ -1,9 +1,13 @@
 import "./styles/global.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Archivo } from "next/font/google";
+import { Toaster } from "@/components/ui/toaster";
+import { SimulationToastListener } from "@/components/settings/toastListener/toastListener";
 
-const inter = Inter({ subsets: ["latin"] });
-
+const archivo = Archivo({
+  variable: "--font-archivo",
+  subsets: ["latin"],
+});
 export const metadata: Metadata = {
   title: "WellProdSim",
   description:
@@ -16,8 +20,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" className={archivo.className}>
+      <body className="font-archivo">
+        <SimulationToastListener />
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

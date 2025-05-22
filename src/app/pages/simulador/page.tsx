@@ -1,10 +1,16 @@
-import MapaSim from "@/components/mapSimulator";
-
-export default function index() {
+"use client";
+import MapSimulator from "@/components/simulation/Simulation";
+import { LoadingScreen } from "@/components/loadingScreen/loadingScreen";
+import { use } from "react";
+export default function Index() {
+  const handleLoadComplete = () => {
+    // handle loading complete logic here if needed
+  };
   return (
-    <main className="min-h-screen p-0">
-     
-      <MapaSim />
-    </main>
+    <LoadingScreen onLoadComplete={handleLoadComplete}>
+      <main className="overflow-hidden">
+        <MapSimulator />
+      </main>
+    </LoadingScreen>
   );
 }
