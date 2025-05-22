@@ -92,7 +92,7 @@ const floatVariables = [
   { key: "daysToWorkForOther", color: "#4FC1E9" },
 ];
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"]; // Colores para la gráfica de pastel
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"]; 
 
 // Definición mejorada de los elementos de navegación con mejores iconos y descripciones
 const navigationItems = [
@@ -243,13 +243,13 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
     };
   }, []);
 
-  // Función de ayuda para formatear nombres de tareas
+  
   const formatTaskName = (taskName: string): string => {
-    // Eliminar 'Task' del final y separar palabras
+    
     return taskName
-      .replace(/Task.*$/, "") // Elimina 'Task' y cualquier texto después
-      .replace(/([A-Z])/g, " $1") // Inserta espacio antes de cada mayúscula
-      .trim(); // Elimina espacios extra
+      .replace(/Task.*$/, "") 
+      .replace(/([A-Z])/g, " $1") 
+      .trim(); 
   };
 
   const getAgentData = (agentId: string) => {
@@ -278,7 +278,7 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
     const agentName = loadedAgents[agentIndex];
     console.log("Obteniendo datos para:", agentName);
 
-    // Obtener los datos completos del agente (taskLog y state)
+    
     const agentInfo = agentTaskLogs[agentName] || {};
     console.log(
       "AgentInfo para",
@@ -311,41 +311,68 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
       console.error("Error parseando state:", error);
     }
 
-    // Extraer valores importantes del estado
-    const health = agentStateData.health || 70;
-    const money = agentStateData.money || 0;
+    
+    const health = (agentStateData as AgentState).health || 70;
+    const money = (agentStateData as AgentState).money || 0;
     const happiness =
-      (((agentStateData["Happiness/Sadness"] || 0) + 1) / 2) * 100;
-    const waterAvailable = agentStateData.waterAvailable || 0;
-    const lands = agentStateData.assignedLands || [];
+      ((((agentStateData as AgentState)["Happiness/Sadness"] || 0) + 1) / 2) * 100;
+    const waterAvailable = (agentStateData as AgentState).waterAvailable || 0;
+    const lands = (agentStateData as AgentState).assignedLands || [];
 
-    // Contar tipos de actividades para el gráfico de pie
+    
     const activityCounts: Record<string, number> = {};
     activityLog.forEach((log) => {
       const activity = log.activity;
       activityCounts[activity] = (activityCounts[activity] || 0) + 1;
     });
 
-    // Convertir a formato para el gráfico de pie
+   
     const activities = Object.entries(activityCounts)
       .map(([key, value]) => ({ name: key, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5); // Top 5 actividades
+      .slice(0, 5); 
 
-    // Crear historial de rendimiento simulado
-    const performanceHistory = Array.from({ length: 5 }, (_, i) => ({
-      day: `Día ${i + 1}`,
-      efficiency: Math.max(0, Math.min(100, health - (5 - i) * 2)),
-      productivity: Math.max(
-        0,
-        Math.min(
-          100,
-          ((agentStateData.totalHarvestedWeight || 0) / 100) * 100 + i * 5
-        )
-      ),
-    }));
+console.log("Agent lands:", {
+  assignedLands: agentStateData.assignedLands,
+  landsLength: agentStateData.assignedLands?.length || 0,
+  money: agentStateData.money || 0,
+  totalHarvestedWeight: agentStateData.totalHarvestedWeight || 0,
+  rawProductivity: ((agentStateData.money || 0) + (agentStateData.totalHarvestedWeight || 0)) 
+    / Math.max(1, agentStateData.assignedLands?.length || 1)
+});
+    
+  const performanceHistory = (() => {
+  
+  const recentTaskLogs = Object.keys(taskLog || {}).sort().slice(-10);
+  
+  
+  return recentTaskLogs.map((dateKey, index) => {
+    
+    const taskLogData = taskLog[dateKey] || {};
+    
+    const simulationDay = taskLogData.currentDay || (6 + index * 7);
+    
+    
+    const dayData = {
+      
+      day: `Day ${simulationDay}`,
+      simulationDate: dateKey,
+      
+      
+      efficiency: taskLogData.health || health,
+      
+      
+      productivity: normalizeValue(
+        ((agentStateData.money || 0) + (agentStateData.totalHarvestedWeight || 0))
+        / Math.max(1, agentStateData.assignedLands?.length || 1)
+        ) * 100
+    };
+    
+    return dayData;
+  });
+})();
 
-    // Crear análisis basado en los datos
+    
     const analysis = [
       `Current health: ${health}%`,
       `Available money: $${money.toLocaleString()}`,
@@ -359,11 +386,35 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
         : "Limited water resources",
 ];
 
-    const interactionInsights = [
-      `Family affinity: ${((agentStateData.peasantFamilyAffinity || 0) * 100).toFixed(1)}%`,
-      `Friends affinity: ${((agentStateData.peasantFriendsAffinity || 0) * 100).toFixed(1)}%`,
-      `Leisure affinity: ${((agentStateData.peasantLeisureAffinity || 0) * 100).toFixed(1)}%`,
-    ];
+
+const calculateAgentWellbeing = (agentStateData: AgentState): number => {
+  
+  const happinessSadness = agentStateData["Happiness/Sadness"] ?? 0;
+  const positiveEmotion = happinessSadness > 0 
+    ? happinessSadness 
+    : 0;
+    
+  
+  const negativeEmotion = happinessSadness < 0 
+    ? Math.abs(happinessSadness) 
+    : 0;
+    
+  
+  const health = (agentStateData.health || 0) / 100;
+  
+  // Aplicar fórmula: Bienestar = Normalizar(eP - eN + Promedio de Salud)
+  const wellbeingRaw = positiveEmotion - negativeEmotion + health;
+  
+  // Normalizar a escala 0-100
+  return normalizeValue(wellbeingRaw) * 100;
+};
+
+
+  const interactionInsights = [
+    `Family affinity: ${((agentStateData.peasantFamilyAffinity || 0) * 100).toFixed(1)}%`,
+    `Friends affinity: ${((agentStateData.peasantFriendsAffinity || 0) * 100).toFixed(1)}%`,
+    `Leisure affinity: ${((agentStateData.peasantLeisureAffinity || 0) * 100).toFixed(1)}%`,
+  ];
 
     return {
       name: agentName,
@@ -373,20 +424,24 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
       ),
       metrics: {
         efficiency: health,
-        productivity: ((agentStateData.totalHarvestedWeight || 0) / 100) * 100,
+        productivity: normalizeValue(
+          (agentStateData.money || 0) + (agentStateData.totalHarvestedWeight || 0)
+          / Math.max(1, agentStateData.assignedLands?.length || 1)
+        ),
         happiness: happiness,
         energy: waterAvailable > 1000 ? 100 : 50,
         money: money,
+        wellbeingIndex: calculateAgentWellbeing(agentStateData)
       },
       lands: lands,
-      activityLog, // Esto contiene el registro de actividades procesado
+      activityLog, 
       activities,
       analysis,
       performanceHistory,
       interactionInsights,
     };
   };
-  // Función auxiliar para formatear la actividad actual
+  
   const formatCurrentActivity = (activity: string) => {
     return activity
       .replace(/_/g, " ")
@@ -458,9 +513,9 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
     return "other";
   };
 
-  // Agrega esta función dentro del componente Analytics
+  
   const calculateAgentActivitySummary = () => {
-  // Contadores para cada estado
+ 
   let working = 0;
   let idle = 0;
   let terminated = 0;
@@ -485,8 +540,8 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
     }
     
     // Determinar el estado del agente basado en sus datos
-    const health = agentStateData.health || 70;
-    const currentActivity = agentStateData.currentActivity || "";
+    const health = (agentStateData as AgentState).health || 70;
+    const currentActivity = (agentStateData as AgentState).currentActivity || "";
     const lastUpdateTime = agentLastUpdate[agentName] || 0;
     
     // Criterios para marcar un agente como terminado:
@@ -574,7 +629,7 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
           }));
           setAgentsData(formattedAgents);
 
-          // Marcar que los agentes ya se han cargado
+
           agentsLoadedRef.current = true;
           console.log("Agentes cargados con éxito:", uniqueAgents.length);
         } catch (error) {
@@ -658,7 +713,7 @@ useEffect(() => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const router = useRouter();
 
-  // Variables para análisis estadístico
+  
   const [primaryVariable, setPrimaryVariable] = useState("efficiency");
   const [secondaryVariable, setSecondaryVariable] = useState("productivity");
   const [analysisType, setAnalysisType] = useState("correlation");
@@ -668,9 +723,9 @@ useEffect(() => {
   const [showRegressionLine, setShowRegressionLine] = useState(true);
   const [distributionBins, setDistributionBins] = useState(10);
   const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
-  // Añade este useEffect después de tus otros useEffects en el componente Analytics
+  
   useEffect(() => {
-    // Solo iniciar el intervalo cuando haya un agente seleccionado
+   
     if (selectedAgent) {
       console.log(
         "Configurando actualización periódica para el agente:",
@@ -727,64 +782,45 @@ useEffect(() => {
     return "Stable";
   };
 
-  const calculateWellbeingIndex = (data: any[]): number => {
-    if (data.length === 0) return 0;
 
-    const recentData = data.slice(-10);
+const calculateWellbeingIndex = (data: any[]): number => {
+  if (data.length === 0) return 0;
 
-    // Normaliza los valores antes de combinarlos
-    const happiness = Math.min(
-      1,
-      Math.max(
-        0,
-        calculateMean(recentData.map((item) => item.HappinessSadness || 0))
-      )
-    );
-    const security = Math.min(
-      1,
-      Math.max(
-        0,
-        calculateMean(recentData.map((item) => item.SecureInsecure || 0))
-      )
-    );
-    const resources = Math.min(
-      1,
-      Math.max(
-        0,
-        calculateMean(recentData.map((item) => item.waterAvailable || 0))
-      )
-    );
-    const health = Math.min(
-      1,
-      Math.max(
-        0,
-        calculateMean(recentData.map((item) => item.health || 0)) / 100
-      )
-    );
-    const social = Math.min(
-      1,
-      Math.max(
-        0,
-        calculateMean(
-          recentData.map(
-            (item) =>
-              (item.peasantFamilyAffinity || 0) * 0.6 +
-              (item.peasantFriendsAffinity || 0) * 0.4
-          )
-        )
-      )
-    );
+  const recentData = data.slice(-10);
 
-    // Índice ponderado con 5 factores principales
-    return (
-      (happiness * 0.25 +
-        security * 0.2 +
-        resources * 0.2 +
-        health * 0.2 +
-        social * 0.15) *
-      100
-    );
-  };
+  
+  const positiveEmotions = calculateMean(
+    recentData.map((item) => {
+      const happiness = item.HappinessSadness || 0;
+      return happiness > 0 ? happiness : 0;
+    })
+  );
+
+  
+  const negativeEmotions = calculateMean(
+    recentData.map((item) => {
+      const happiness = item.HappinessSadness || 0;
+      return happiness < 0 ? Math.abs(happiness) : 0;
+    })
+  );
+
+  
+  const avgHealth = calculateMean(
+    recentData.map((item) => item.health || 0)
+  ) / 100; 
+
+  
+  const wellbeingRaw = positiveEmotions - negativeEmotions + avgHealth;
+  
+  
+  return normalizeValue(wellbeingRaw) * 100;
+};
+
+
+const normalizeValue = (value: number): number => {
+  // Asegurar que el valor esté entre 0 y 1
+  return Math.min(1, Math.max(0, value));
+};
 
   // Datos de ejemplo para gráficos de parámetros
   const getParameterData = () => {
@@ -1244,7 +1280,7 @@ useEffect(() => {
         {/* Logo UTB en la parte inferior */}
         <div className="mt-auto flex justify-center p-4">
           <Image
-            src="/imagess/logo.svg"
+            src="/images/logo.svg"
             alt="WellProdSimulator"
             width={400}
             height={300}
@@ -1306,34 +1342,25 @@ useEffect(() => {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Tarjeta 1: Bienestar Emocional */}
-                        <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
-                          <div>
-                            <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                              Emotional Wellbeing
-                            </p>
-                            <h3 className="text-2xl font-bold dark:text-white truncate">
-                              {(() => {
-                                // Convertir de -1...1 a porcentaje 0...100
-                                const rawValues = simulationData.map(
-                                  (item) => item.HappinessSadness || 0
-                                );
-                                const value = calculateMean(rawValues);
-                                const normalized = ((value + 1) / 2) * 100;
-                                return isNaN(normalized) ||
-                                  !isFinite(normalized)
-                                  ? "N/A"
-                                  : `${normalized.toFixed(1)}%`;
-                              })()}
-                            </h3>
-                          </div>
-                          <p className="text-xs text-muted-foreground dark:text-gray-500 mt-2">
-                            {calculateTrend(
-                              simulationData.map(
-                                (item) => item.HappinessSadness
-                              )
-                            )}
-                          </p>
-                        </div>
+                                <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
+                                  <div>
+                                    <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">
+                                      Emotional Wellbeing
+                                    </p>
+                                    <h3 className="text-2xl font-bold dark:text-white truncate">
+                                      {(() => {
+                                        
+                                        const wellbeingIndex = calculateWellbeingIndex(simulationData);
+                                        return isNaN(wellbeingIndex) || !isFinite(wellbeingIndex) 
+                                          ? "N/A" 
+                                          : `${wellbeingIndex.toFixed(1)}%`;
+                                      })()}
+                                    </h3>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground dark:text-gray-500 mt-2">
+                                    Based on positive/negative emotions and health
+                                  </p>
+</div>
 
                         {/* Tarjeta 2: Salud Económica */}
                         <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">

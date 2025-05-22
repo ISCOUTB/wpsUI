@@ -17,7 +17,7 @@ import {
   Cell,
 } from "recharts"
 
-// Componentes adicionales necesarios
+
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
@@ -149,34 +149,82 @@ export function AgentDetailView({ agentId, agentData, onBack, averageEfficiency 
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Métricas */}
+          </div>          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Performance History */}
             <div className="bg-card border border-border rounded-lg p-6 dark:bg-gray-800 dark:border-gray-700">
               <h3 className="text-lg font-medium mb-3 dark:text-white">Performance History</h3>
               <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={agentData.performanceHistory} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                    <XAxis dataKey="day" stroke="#888" />
-                    <YAxis stroke="#888" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#1f2937",
-                        border: "1px solid #374151",
-                        borderRadius: "6px",
-                        color: "#fff",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ color: "#ccc" }} />
-                    <Line type="monotone" dataKey="efficiency" stroke="#8884d8" name="Health" />
-                    <Line type="monotone" dataKey="productivity" stroke="#82ca9d" name="Productivity" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart 
+                  data={agentData.performanceHistory} 
+                  margin={{ top: 10, right: 30, left: 10, bottom: 15 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.6} />
+                  <XAxis 
+                    dataKey="day" 
+                    stroke="#888"
+                    tick={{ fill: '#888', fontSize: 12 }}
+                    axisLine={{ stroke: '#555' }}
+                  />
+                  <YAxis 
+                    stroke="#888" 
+                    domain={[0, 100]}
+                    tick={{ fill: '#888', fontSize: 12 }}
+                    axisLine={{ stroke: '#555' }}
+                    tickFormatter={(value) => `${value}%`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(31, 41, 55, 0.95)",
+                      border: "1px solid #374151",
+                      borderRadius: "6px",
+                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+                      color: "#fff",
+                    }}
+                    formatter={(value, name, props) => {
+                      
+                      const metricName = props.dataKey === "efficiency" ? "Health" : "Productivity";
+                      return [`${Number(value).toFixed(1)}%`, metricName];
+                    }}
+                    labelFormatter={(label) => `${label}`}/>
+                  <Legend 
+                    wrapperStyle={{ 
+                      color: "#ccc", 
+                      paddingTop: 15,
+                      marginTop: 10, 
+                      bottom: 0
+                    }}
+                    verticalAlign="bottom" 
+                    height={36}
+                    iconSize={10}
+                  />
+                  <Line 
+                  type="monotone" 
+                  dataKey="efficiency"  
+                  stroke="#8884d8" 
+                  strokeWidth={2}
+                  dot={{ r: 4, strokeWidth: 1, fill: "#1f2937" }}
+                  activeDot={{ r: 6, stroke: "#8884d8", strokeWidth: 2 }}
+                  name="Health"  
+                  animationDuration={1500}
+                  isAnimationActive={true}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="productivity"  
+                  stroke="#82ca9d" 
+                  strokeWidth={2}
+                  dot={{ r: 4, strokeWidth: 1, fill: "#1f2937" }}
+                  activeDot={{ r: 6, stroke: "#82ca9d", strokeWidth: 2 }}
+                  name="Productivity"  
+                  animationDuration={1500}
+                  isAnimationActive={true}
+                />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
+          </div>
 
             {/* Activity Distribution */}
             <div className="bg-card border border-border rounded-lg p-6 dark:bg-gray-800 dark:border-gray-700">
