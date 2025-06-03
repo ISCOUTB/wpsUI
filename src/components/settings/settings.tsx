@@ -1,35 +1,26 @@
-"use client";
+"use client"
 
-import React, { useState, useLayoutEffect } from "react";
-import { motion } from "framer-motion";
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import path from "path";
-import { useRouter } from "next/navigation";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { InfoIcon } from "lucide-react";
-import { startSettingsTour } from "@/components/settings/tourJs/tour";
+import type React from "react"
+import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import { Slider } from "@/components/ui/slider"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import path from "path"
+import { useRouter } from "next/navigation"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { InfoIcon, HelpCircle } from "lucide-react"
+import { startSettingsTour, shouldShowSettingsTourThisSession } from "@/components/drive/tour.js"
 
 interface ConfigOptionProps {
-  id?: string;
-  title: string;
-  description: string;
-  tooltipInfo: string;
-  children: React.ReactNode;
+  id?: string
+  title: string
+  description: string
+  tooltipInfo: string
+  children: React.ReactNode
 }
 
-const ConfigOption = ({
-  id,
-  title,
-  description,
-  tooltipInfo,
-  children,
-}: ConfigOptionProps) => (
+const ConfigOption = ({ id, title, description, tooltipInfo, children }: ConfigOptionProps) => (
   <motion.div
     id={id}
     className="bg-[#181c20] text-[#ffffff] p-6 rounded-lg border border-[#272d34]"
@@ -50,83 +41,39 @@ const ConfigOption = ({
     <p className="text-sm text-[hsl(217.9,10.6%,64.9%)] mb-4">{description}</p>
     {children}
   </motion.div>
-);
+)
 
 export default function SimulatorConfigPage() {
-  const [agents, setAgents] = useState(2);
-  const [money, setMoney] = useState(75000);
-  const [land, setLand] = useState(2);
-  const [personality, setPersonality] = useState(0);
-  const [tools, setTools] = useState(20);
-  const [seeds, setSeeds] = useState(50);
-  const [water, setWater] = useState(0);
-  const [irrigation, setIrrigation] = useState(0);
-  const [emotions, setEmotions] = useState(0);
-  const [years, setYears] = useState(2);
+  const [agents, setAgents] = useState(2)
+  const [money, setMoney] = useState(75000)
+  const [land, setLand] = useState(2)
+  const [personality, setPersonality] = useState(0)
+  const [tools, setTools] = useState(20)
+  const [seeds, setSeeds] = useState(50)
+  const [water, setWater] = useState(0)
+  const [irrigation, setIrrigation] = useState(0)
+  const [emotions, setEmotions] = useState(0)
+  const [years, setYears] = useState(2)
+  const [showTourButton, setShowTourButton] = useState(false)
 
-  const router = useRouter();
+  const router = useRouter()
 
-  const tourElementIds = [
-    "config-agents",
-    "config-money",
-    "config-land",
-    "config-personality",
-    "config-tools",
-    "config-seeds",
-    "config-water",
-    "config-irrigation",
-    "config-emotions",
-    "config-years",
-  ];
+  useEffect(() => {
+    // Verificar si debe mostrarse el tour en esta sesión
+    if (shouldShowSettingsTourThisSession()) {
+      console.log("[Estado] Primera visita a configuración en esta sesión - preparando tour")
 
-  useLayoutEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      localStorage.removeItem("hasSeenTour");
+      // Esperar un poco para que el DOM esté completamente cargado
+      const timer = setTimeout(() => {
+        console.log("[Estado] Iniciando tour de configuración para orientación inicial")
+        startSettingsTour() // Sin forceStart, usa la lógica de sesión
+      }, 1000)
+
+      return () => clearTimeout(timer)
+    } else {
+      console.log("[Estado] Tour de configuración ya mostrado en esta sesión o completado previamente")
     }
-
-    let attempts = 0;
-    const maxAttempts = 10;
-    let rafId: number;
-    let timeoutId: ReturnType<typeof setTimeout>;
-
-    const checkAndStart = () => {
-      attempts++;
-      const allReady = tourElementIds.every((id) => {
-        const el = document.getElementById(id);
-        if (!el) console.log(`Elemento no encontrado aún: ${id}`);
-        return !!el;
-      });
-
-      if (!allReady && attempts < maxAttempts) {
-        timeoutId = setTimeout(() => {
-          rafId = window.requestAnimationFrame(checkAndStart);
-        }, 500);
-        return;
-      }
-
-      if (!allReady) {
-        console.error("No se pudo iniciar el tour tras varios intentos.");
-        return;
-      }
-
-      const hasSeenTour = localStorage.getItem("hasSeenTour") === "true";
-      if (!hasSeenTour) {
-        try {
-          startSettingsTour();
-          localStorage.setItem("hasSeenTour", "true");
-        } catch (error) {
-          console.error("Error al iniciar el tour:", error);
-        }
-      }
-    };
-
-    rafId = window.requestAnimationFrame(checkAndStart);
-
-    return () => {
-      window.cancelAnimationFrame(rafId);
-      clearTimeout(timeoutId);
-    };
-  }, []);
+  }, [])
 
   const buildArgs = () => {
     const argsObj = {
@@ -142,33 +89,35 @@ export default function SimulatorConfigPage() {
       irrigation,
       emotions,
       years,
-    };
-    return Object.entries(argsObj).flatMap(([key, value]) => [
-      `-${key}`,
-      String(value),
-    ]);
-  };
+    }
+    return Object.entries(argsObj).flatMap(([key, value]) => [`-${key}`, String(value)])
+  }
 
   const handleExecuteExe = async () => {
     try {
-      const appPath = await window.electronAPI.getAppPath();
-      const csvPath = path.join(appPath, "/src/wps/logs/wpsSimulator.csv");
+      const appPath = await window.electronAPI.getAppPath()
+      const csvPath = path.join(appPath, "/src/wps/logs/wpsSimulator.csv")
       if (await window.electronAPI.fileExists(csvPath)) {
-        await window.electronAPI.deleteFile(csvPath);
+        await window.electronAPI.deleteFile(csvPath)
       }
-      const args = buildArgs();
-      const exePath = path.join(appPath, "/src/wps/wpsSimulator-1.0.exe");
-      await window.electronAPI.executeExe(exePath, args);
+      const args = buildArgs()
+      const exePath = path.join(appPath, "/src/wps/wpsSimulator-1.0.exe")
+      await window.electronAPI.executeExe(exePath, args)
     } catch (error: any) {
       if (!error.message.includes("Unrecognized option")) {
-        console.error("Error ejecutando el EXE:", error);
+        console.error("Error ejecutando el EXE:", error)
       }
     }
-  };
+  }
 
   const handleStartSimulation = () => {
-    router.push("/pages/simulador");
-  };
+    router.push("/pages/simulador")
+  }
+
+  const handleStartTour = () => {
+    console.log("[Estado] Tour de configuración iniciado manualmente por el usuario")
+    startSettingsTour(true) // Forzar el inicio del tour independientemente del estado
+  }
 
   return (
     <TooltipProvider>
@@ -225,11 +174,9 @@ export default function SimulatorConfigPage() {
               <Slider
                 value={[land]}
                 onValueChange={(v) => {
-                  const allowed = [2, 6, 12];
-                  const nearest = allowed.reduce((p, c) =>
-                    Math.abs(c - v[0]) < Math.abs(p - v[0]) ? c : p
-                  );
-                  setLand(nearest);
+                  const allowed = [2, 6, 12]
+                  const nearest = allowed.reduce((p, c) => (Math.abs(c - v[0]) < Math.abs(p - v[0]) ? c : p))
+                  setLand(nearest)
                 }}
                 min={2}
                 max={12}
@@ -342,30 +289,38 @@ export default function SimulatorConfigPage() {
           </div>
 
           <motion.button
-            className="mt-6 w-full bg-[#004d66] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#004d66]/90 transition-colors"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              localStorage.removeItem("hasSeenTour");
-              setTimeout(() => startSettingsTour(), 50);
-            }}
-          >
-            Show Guide
-          </motion.button>
-
-          <motion.button
             className="mt-12 w-full bg-[hsl(221.2,83.2%,53.3%)] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[hsl(221.2,83.2%,53.3%)]/90 transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => {
-              handleExecuteExe();
-              handleStartSimulation();
+              handleExecuteExe()
+              handleStartSimulation()
             }}
           >
             Save Configuration
           </motion.button>
+
+          {/* Botón de ayuda flotante */}
+          <div className="fixed bottom-4 right-4 flex flex-col gap-2">
+            <Button
+              className="bg-[#2664eb] text-white hover:bg-[#1e4bbf] rounded-full p-2"
+              onClick={() => setShowTourButton(!showTourButton)}
+            >
+              <HelpCircle className="w-5 h-5" />
+            </Button>
+
+            {/* Botón para iniciar el tour manualmente */}
+            {showTourButton && (
+              <Button
+                className="bg-[#181c20] text-white border border-[#2664eb] hover:bg-[#232830]"
+                onClick={handleStartTour}
+              >
+                Ver Tour
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </TooltipProvider>
-  );
+  )
 }
