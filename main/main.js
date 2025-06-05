@@ -119,7 +119,7 @@ ipcMain.handle("execute-exe", async (event, exePath, args) => {
       // En macOS, usamos execFile para ejecutar el archivo Java directamente
       JavaPath = path.join(
         app.getAppPath(),
-        "/src/wps/JreMac/bin/java"
+        "/src/wps/JreMac/Home/bin/java"
       );
     } else {
       // En Linux, usamos execFile para ejecutar el archivo Java directamente
