@@ -103,7 +103,34 @@ let javaProcess;
 
 ipcMain.handle("execute-exe", async (event, exePath, args) => {
   return new Promise((resolve, reject) => {
-    javaProcess = execFile(exePath, args, (error, stdout, stderr) => {
+    // Construir argumentos correctamente: -jar exePath [args]
+    const allArgs = ["-jar", exePath, ...args];
+
+    let JavaPath = "";
+
+    //dectectar sistema operativo
+    if (process.platform === "win32") {
+      // En Windows, usamos execFile para ejecutar el archivo Java directamente
+      JavaPath = path.join(
+        app.getAppPath(),
+        "/src/wps/JreWin/bin/java.exe"
+      );
+    } else if (process.platform === "darwin") {
+      // En macOS, usamos execFile para ejecutar el archivo Java directamente
+      JavaPath = path.join(
+        app.getAppPath(),
+        "/src/wps/JreMac/bin/java"
+      );
+    } else {
+      // En Linux, usamos execFile para ejecutar el archivo Java directamente
+      JavaPath = path.join(
+        app.getAppPath(),
+        "/src/wps/JreLinux/bin/java"
+      );
+    }
+
+    // Ejecutar el proceso Java
+    javaProcess = execFile(JavaPath, allArgs, (error, stdout, stderr) => {
       if (error) {
         reject(stderr || error.message);
       } else {
@@ -134,7 +161,7 @@ ipcMain.handle("clear-csv", async () => {
   try {
     const csvPath = path.join(
       app.getAppPath(),
-      "../src/wps/logs/wpsSimulator.csv"
+      "../logs/wpsSimulator.csv"
     );
     fs.writeFileSync(csvPath, "");
     return { success: true, path: csvPath };
@@ -146,8 +173,8 @@ ipcMain.handle("clear-csv", async () => {
 ipcMain.handle("read-csv", async () => {
   try {
     const basePath = app.isPackaged
-      ? path.join(app.getAppPath(), "../src/wps/logs/wpsSimulator.csv")
-      : path.join(__dirname, "../src/wps/logs/wpsSimulator.csv");
+      ? path.join(app.getAppPath(), "../logs/wpsSimulator.csv")
+      : path.join(__dirname, "../logs/wpsSimulator.csv");
 
     if (!fs.existsSync(basePath)) {
       return { success: false, error: "Archivo no encontrado" };

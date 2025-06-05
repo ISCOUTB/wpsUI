@@ -96,12 +96,12 @@ export default function SimulatorConfigPage() {
   const handleExecuteExe = async () => {
     try {
       const appPath = await window.electronAPI.getAppPath()
-      const csvPath = path.join(appPath, "/src/wps/logs/wpsSimulator.csv")
+      const csvPath = path.join(appPath, "/logs/wpsSimulator.csv")
       if (await window.electronAPI.fileExists(csvPath)) {
         await window.electronAPI.deleteFile(csvPath)
       }
       const args = buildArgs()
-      const exePath = path.join(appPath, "/src/wps/wpsSimulator-1.0.exe")
+      const exePath = path.join(appPath, "/src/wps/wpsSimulator-1.0.jar")
       await window.electronAPI.executeExe(exePath, args)
     } catch (error: any) {
       if (!error.message.includes("Unrecognized option")) {
