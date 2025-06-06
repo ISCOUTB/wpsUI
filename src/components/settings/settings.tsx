@@ -94,21 +94,37 @@ export default function SimulatorConfigPage() {
   }
 
   const handleExecuteExe = async () => {
-    try {
-      const appPath = await window.electronAPI.getAppPath()
-      const csvPath = path.join(appPath, "/logs/wpsSimulator.csv")
-      if (await window.electronAPI.fileExists(csvPath)) {
-        await window.electronAPI.deleteFile(csvPath)
-      }
-      const args = buildArgs()
-      const exePath = path.join(appPath, "/src/wps/wpsSimulator-1.0.jar")
-      await window.electronAPI.executeExe(exePath, args)
-    } catch (error: any) {
-      if (!error.message.includes("Unrecognized option")) {
-        console.error("Error ejecutando el EXE:", error)
-      }
+  try {
+    const appPath = await window.electronAPI.getAppPath()
+    
+    // Obtener la ruta correcta del CSV según la plataforma y entorno
+    let csvPath
+    
+    // Comprobar si estamos en la versión empaquetada para macOS
+    if (await window.electronAPI.isPackagedMac()) {
+      // Usar la ruta de macOS donde Java escribe los archivos
+      const userDataPath = await window.electronAPI.getUserDataPath()
+      csvPath = path.join(userDataPath, 'working', 'logs', 'wpsSimulator.csv')
+    } else {
+      // Usar la ruta original para desarrollo o Windows
+      csvPath = path.join(appPath, "/logs/wpsSimulator.csv")
+    }
+    
+    console.log("Eliminando CSV en:", csvPath)
+    
+    if (await window.electronAPI.fileExists(csvPath)) {
+      await window.electronAPI.deleteFile(csvPath)
+    }
+    
+    const args = buildArgs()
+    const exePath = path.join(appPath, "/src/wps/wpsSimulator-1.0.jar")
+    await window.electronAPI.executeExe(exePath, args)
+  } catch (error: any) {
+    if (!error.message.includes("Unrecognized option")) {
+      console.error("Error ejecutando el EXE:", error)
     }
   }
+}
 
   const handleStartSimulation = () => {
     router.push("/pages/simulador")

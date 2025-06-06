@@ -17,7 +17,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"magenta,cyan\" --kill-others \"next dev\" \"electron .\"",
-    "build": "delete.bat && next build && electron-builder && modules.bat",
+    "build": "chmod +x ./delete.sh && ./delete.sh && next build && electron-builder && chmod +x ./modules.sh && ./modules.sh",
     "start": "next start",
     "electron": "electron .",
     "postinstall": "electron-builder install-app-deps",
@@ -110,7 +110,7 @@
     "typescript": "5.6.2"
   },
   "build": {
-    "appId": "WellProdSim",
+    "appId": "com.wellprodsim.app",
     "productName": "WellProdSim",
     "files": [
       "out/**/*",
@@ -123,8 +123,13 @@
     "asarUnpack": [
       "src/wps/**/*"
     ],
+    "extraResources": [
+      "src/wps/**/*",
+      "logs/**/*"
+    ],
     "directories": {
-      "buildResources": "assets"
+      "buildResources": "assets",
+      "output": "dist"
     },
     "win": {
       "target": [
@@ -141,12 +146,22 @@
       "icon": "resources/icon.png"
     },
     "mac": {
+      "category": "public.app-category.education",
       "target": [
-        "dir",
-        "dmg",
-        "zip"
+        "dir"
       ],
-      "icon": "resources/icon.icns"
+      "icon": "resources/icon.icns",
+      "extraResources": [
+        {
+          "from": "src/wps",
+          "to": "src/wps"
+        },
+        {
+          "from": "logs",
+          "to": "logs"
+        }
+      ],
+      "hardenedRuntime": true
     }
   }
 }

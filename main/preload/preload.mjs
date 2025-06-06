@@ -11,6 +11,8 @@ localStorage: {
 
 },
   readCsv: () => ipcRenderer.invoke("read-csv"),
+  isPackagedMac: () => ipcRenderer.invoke('is-packaged-mac'),
+  getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
   deleteFile: (path) => ipcRenderer.invoke("delete-file", path),
   checkJavaProcess: () => ipcRenderer.invoke("check-java-process"),
   executeExe: (exePath, args) =>
