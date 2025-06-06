@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -64,7 +63,7 @@ import {
 } from "recharts";
 
 import type { ParameterType } from "@/lib/parameter-config";
-
+import { startNavigationTour } from "@/components/drive/tour";
 import { TimeSeriesAnalysis } from "@/components/analytics/analysis/time-series-analysis";
 import { AgentDetailView } from "@/components/analytics/agent/agent-detail-view";
 import { DistributionAnalysis } from "@/components/analytics/analysis/distribution-analysis"; // Añade esta línea
@@ -92,7 +91,7 @@ const floatVariables = [
   { key: "daysToWorkForOther", color: "#4FC1E9" },
 ];
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"]; 
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 // Definición mejorada de los elementos de navegación con mejores iconos y descripciones
 const navigationItems = [
@@ -125,9 +124,11 @@ export default function Analytics() {
   ]);
 
   // Al inicio del componente Analytics, añade estos estados:
-const [agentLastUpdate, setAgentLastUpdate] = useState<Record<string, number>>({});
-const [simulationActive, setSimulationActive] = useState(true);
-const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para considerar inactivo
+  const [agentLastUpdate, setAgentLastUpdate] = useState<
+    Record<string, number>
+  >({});
+  const [simulationActive, setSimulationActive] = useState(true);
+  const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para considerar inactivo
   interface AgentState {
     peasantLeisureAffinity?: number;
     peasantFriendsAffinity?: number;
@@ -156,6 +157,27 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
   const [loadedAgents, setLoadedAgents] = useState<string[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
 
+
+  const checkElementsReady = () => {
+  const elements = ["nav-home", "nav-statistics", "nav-agents"];
+  const missingElements = elements.filter((id) => !document.getElementById(id));
+
+  if (missingElements.length > 0) {
+    console.log("Elementos faltantes:", missingElements);
+  }
+
+  return elements.every((id) => document.getElementById(id));
+};
+
+  useEffect(() => {
+    // Verificar si el usuario está visitando Analytics por primera vez
+    const timer = setTimeout(() => {
+      startNavigationTour();
+    }, 2000); // Esperar 2 segundos antes de iniciar el tour
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // Modificar la conexión WebSocket (añadir al useEffect existente)
   useEffect(() => {
     const connectWebSocket = () => {
@@ -174,55 +196,55 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
       };
 
       socket.onmessage = (event) => {
-  const prefix = event.data.substring(0, 2);
-  const data = event.data.substring(2);
+        const prefix = event.data.substring(0, 2);
+        const data = event.data.substring(2);
 
-  // Marcar la simulación como activa siempre que lleguen mensajes
-  setSimulationActive(true);
+        // Marcar la simulación como activa siempre que lleguen mensajes
+        setSimulationActive(true);
 
-  switch (prefix) {
-    case "j=":
-      try {
-        console.log("Recibiendo datos j=");
-        const jsonData = JSON.parse(data);
-        const { name, taskLog, state } = jsonData;
+        switch (prefix) {
+          case "j=":
+            try {
+              console.log("Recibiendo datos j=");
+              const jsonData = JSON.parse(data);
+              const { name, taskLog, state } = jsonData;
 
-        if (name) {
-          // Guardar la hora actual como última actualización para este agente
-          setAgentLastUpdate(prev => ({
-            ...prev,
-            [name]: Date.now()
-          }));
-          
-          // Resto de la lógica existente...
-          setAgentTaskLogs((prev) => ({
-            ...prev,
-            [name]: { taskLog, state },
-          }));
+              if (name) {
+                // Guardar la hora actual como última actualización para este agente
+                setAgentLastUpdate((prev) => ({
+                  ...prev,
+                  [name]: Date.now(),
+                }));
 
-          setLoadedAgents((prev) => {
-            if (!prev.includes(name)) {
-              return [...prev, name];
+                // Resto de la lógica existente...
+                setAgentTaskLogs((prev) => ({
+                  ...prev,
+                  [name]: { taskLog, state },
+                }));
+
+                setLoadedAgents((prev) => {
+                  if (!prev.includes(name)) {
+                    return [...prev, name];
+                  }
+                  return prev;
+                });
+              }
+            } catch (error) {
+              console.error("Error al procesar datos del agente:", error);
             }
-            return prev;
-          });
+            break;
+
+          // Caso para detectar fin de simulación explícitamente
+          case "e=": // "e" de "end"
+            try {
+              console.log("Fin de simulación detectado");
+              setSimulationActive(false);
+            } catch (error) {
+              console.error("Error al procesar fin de simulación:", error);
+            }
+            break;
         }
-      } catch (error) {
-        console.error("Error al procesar datos del agente:", error);
-      }
-      break;
-      
-    // Caso para detectar fin de simulación explícitamente
-    case "e=": // "e" de "end"
-      try {
-        console.log("Fin de simulación detectado");
-        setSimulationActive(false);
-      } catch (error) {
-        console.error("Error al procesar fin de simulación:", error);
-      }
-      break;
-  }
-};
+      };
       socket.onclose = () => {
         console.log("WebSocket desconectado");
         setTimeout(connectWebSocket, 2000);
@@ -243,13 +265,11 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
     };
   }, []);
 
-  
   const formatTaskName = (taskName: string): string => {
-    
     return taskName
-      .replace(/Task.*$/, "") 
-      .replace(/([A-Z])/g, " $1") 
-      .trim(); 
+      .replace(/Task.*$/, "")
+      .replace(/([A-Z])/g, " $1")
+      .trim();
   };
 
   const getAgentData = (agentId: string) => {
@@ -278,7 +298,6 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
     const agentName = loadedAgents[agentIndex];
     console.log("Obteniendo datos para:", agentName);
 
-    
     const agentInfo = agentTaskLogs[agentName] || {};
     console.log(
       "AgentInfo para",
@@ -294,10 +313,8 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
     );
     console.log("TaskLog keys:", Object.keys(taskLog));
 
-    
     const activityLog = processTaskLog(taskLog);
 
-    
     let agentStateData: AgentState = {};
     try {
       if (agentInfo.state) {
@@ -311,68 +328,64 @@ const TIMEOUT_THRESHOLD = 10000; // 10 segundos sin actualización para consider
       console.error("Error parseando state:", error);
     }
 
-    
     const health = (agentStateData as AgentState).health || 70;
     const money = (agentStateData as AgentState).money || 0;
     const happiness =
-      ((((agentStateData as AgentState)["Happiness/Sadness"] || 0) + 1) / 2) * 100;
+      ((((agentStateData as AgentState)["Happiness/Sadness"] || 0) + 1) / 2) *
+      100;
     const waterAvailable = (agentStateData as AgentState).waterAvailable || 0;
     const lands = (agentStateData as AgentState).assignedLands || [];
 
-    
     const activityCounts: Record<string, number> = {};
     activityLog.forEach((log) => {
       const activity = log.activity;
       activityCounts[activity] = (activityCounts[activity] || 0) + 1;
     });
 
-   
     const activities = Object.entries(activityCounts)
       .map(([key, value]) => ({ name: key, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5); 
+      .slice(0, 5);
 
-console.log("Agent lands:", {
-  assignedLands: agentStateData.assignedLands,
-  landsLength: agentStateData.assignedLands?.length || 0,
-  money: agentStateData.money || 0,
-  totalHarvestedWeight: agentStateData.totalHarvestedWeight || 0,
-  rawProductivity: ((agentStateData.money || 0) + (agentStateData.totalHarvestedWeight || 0)) 
-    / Math.max(1, agentStateData.assignedLands?.length || 1)
-});
-    
-  const performanceHistory = (() => {
-  
-  const recentTaskLogs = Object.keys(taskLog || {}).sort().slice(-10);
-  
-  
-  return recentTaskLogs.map((dateKey, index) => {
-    
-    const taskLogData = taskLog[dateKey] || {};
-    
-    const simulationDay = taskLogData.currentDay || (6 + index * 7);
-    
-    
-    const dayData = {
-      
-      day: `Day ${simulationDay}`,
-      simulationDate: dateKey,
-      
-      
-      efficiency: taskLogData.health || health,
-      
-      
-      productivity: normalizeValue(
-        ((agentStateData.money || 0) + (agentStateData.totalHarvestedWeight || 0))
-        / Math.max(1, agentStateData.assignedLands?.length || 1)
-        ) * 100
-    };
-    
-    return dayData;
-  });
-})();
+    console.log("Agent lands:", {
+      assignedLands: agentStateData.assignedLands,
+      landsLength: agentStateData.assignedLands?.length || 0,
+      money: agentStateData.money || 0,
+      totalHarvestedWeight: agentStateData.totalHarvestedWeight || 0,
+      rawProductivity:
+        ((agentStateData.money || 0) +
+          (agentStateData.totalHarvestedWeight || 0)) /
+        Math.max(1, agentStateData.assignedLands?.length || 1),
+    });
 
-    
+    const performanceHistory = (() => {
+      const recentTaskLogs = Object.keys(taskLog || {})
+        .sort()
+        .slice(-10);
+
+      return recentTaskLogs.map((dateKey, index) => {
+        const taskLogData = taskLog[dateKey] || {};
+
+        const simulationDay = taskLogData.currentDay || 6 + index * 7;
+
+        const dayData = {
+          day: `Day ${simulationDay}`,
+          simulationDate: dateKey,
+
+          efficiency: taskLogData.health || health,
+
+          productivity:
+            normalizeValue(
+              ((agentStateData.money || 0) +
+                (agentStateData.totalHarvestedWeight || 0)) /
+                Math.max(1, agentStateData.assignedLands?.length || 1)
+            ) * 100,
+        };
+
+        return dayData;
+      });
+    })();
+
     const analysis = [
       `Current health: ${health}%`,
       `Available money: $${money.toLocaleString()}`,
@@ -384,37 +397,29 @@ console.log("Agent lands:", {
       waterAvailable > 1000
         ? "Abundant water resources"
         : "Limited water resources",
-];
+    ];
 
+    const calculateAgentWellbeing = (agentStateData: AgentState): number => {
+      const happinessSadness = agentStateData["Happiness/Sadness"] ?? 0;
+      const positiveEmotion = happinessSadness > 0 ? happinessSadness : 0;
 
-const calculateAgentWellbeing = (agentStateData: AgentState): number => {
-  
-  const happinessSadness = agentStateData["Happiness/Sadness"] ?? 0;
-  const positiveEmotion = happinessSadness > 0 
-    ? happinessSadness 
-    : 0;
-    
-  
-  const negativeEmotion = happinessSadness < 0 
-    ? Math.abs(happinessSadness) 
-    : 0;
-    
-  
-  const health = (agentStateData.health || 0) / 100;
-  
-  // Aplicar fórmula: Bienestar = Normalizar(eP - eN + Promedio de Salud)
-  const wellbeingRaw = positiveEmotion - negativeEmotion + health;
-  
-  // Normalizar a escala 0-100
-  return normalizeValue(wellbeingRaw) * 100;
-};
+      const negativeEmotion =
+        happinessSadness < 0 ? Math.abs(happinessSadness) : 0;
 
+      const health = (agentStateData.health || 0) / 100;
 
-  const interactionInsights = [
-    `Family affinity: ${((agentStateData.peasantFamilyAffinity || 0) * 100).toFixed(1)}%`,
-    `Friends affinity: ${((agentStateData.peasantFriendsAffinity || 0) * 100).toFixed(1)}%`,
-    `Leisure affinity: ${((agentStateData.peasantLeisureAffinity || 0) * 100).toFixed(1)}%`,
-  ];
+      // Aplicar fórmula: Bienestar = Normalizar(eP - eN + Promedio de Salud)
+      const wellbeingRaw = positiveEmotion - negativeEmotion + health;
+
+      // Normalizar a escala 0-100
+      return normalizeValue(wellbeingRaw) * 100;
+    };
+
+    const interactionInsights = [
+      `Family affinity: ${((agentStateData.peasantFamilyAffinity || 0) * 100).toFixed(1)}%`,
+      `Friends affinity: ${((agentStateData.peasantFriendsAffinity || 0) * 100).toFixed(1)}%`,
+      `Leisure affinity: ${((agentStateData.peasantLeisureAffinity || 0) * 100).toFixed(1)}%`,
+    ];
 
     return {
       name: agentName,
@@ -425,23 +430,24 @@ const calculateAgentWellbeing = (agentStateData: AgentState): number => {
       metrics: {
         efficiency: health,
         productivity: normalizeValue(
-          (agentStateData.money || 0) + (agentStateData.totalHarvestedWeight || 0)
-          / Math.max(1, agentStateData.assignedLands?.length || 1)
+          (agentStateData.money || 0) +
+            (agentStateData.totalHarvestedWeight || 0) /
+              Math.max(1, agentStateData.assignedLands?.length || 1)
         ),
         happiness: happiness,
         energy: waterAvailable > 1000 ? 100 : 50,
         money: money,
-        wellbeingIndex: calculateAgentWellbeing(agentStateData)
+        wellbeingIndex: calculateAgentWellbeing(agentStateData),
       },
       lands: lands,
-      activityLog, 
+      activityLog,
       activities,
       analysis,
       performanceHistory,
       interactionInsights,
     };
   };
-  
+
   const formatCurrentActivity = (activity: string) => {
     return activity
       .replace(/_/g, " ")
@@ -513,66 +519,65 @@ const calculateAgentWellbeing = (agentStateData: AgentState): number => {
     return "other";
   };
 
-  
   const calculateAgentActivitySummary = () => {
- 
-  let working = 0;
-  let idle = 0;
-  let terminated = 0;
-  
-  const now = Date.now();
+    let working = 0;
+    let idle = 0;
+    let terminated = 0;
 
-  // Recorre todos los agentes cargados
-  loadedAgents.forEach((agentName) => {
-    const agentInfo = agentTaskLogs[agentName] || {};
-    let agentStateData = {};
-    
-    try {
-      if (agentInfo.state) {
-        if (typeof agentInfo.state === 'string') {
-          agentStateData = JSON.parse(agentInfo.state);
-        } else {
-          agentStateData = agentInfo.state;
+    const now = Date.now();
+
+    // Recorre todos los agentes cargados
+    loadedAgents.forEach((agentName) => {
+      const agentInfo = agentTaskLogs[agentName] || {};
+      let agentStateData = {};
+
+      try {
+        if (agentInfo.state) {
+          if (typeof agentInfo.state === "string") {
+            agentStateData = JSON.parse(agentInfo.state);
+          } else {
+            agentStateData = agentInfo.state;
+          }
         }
+      } catch (error) {
+        console.error("Error parseando state para resumen:", error);
       }
-    } catch (error) {
-      console.error("Error parseando state para resumen:", error);
-    }
-    
-    // Determinar el estado del agente basado en sus datos
-    const health = (agentStateData as AgentState).health || 70;
-    const currentActivity = (agentStateData as AgentState).currentActivity || "";
-    const lastUpdateTime = agentLastUpdate[agentName] || 0;
-    
-    // Criterios para marcar un agente como terminado:
-    // 1. Salud muy baja (agente muerto)
-    // 2. Simulación inactiva (no se reciben más datos)
-    // 3. No se ha actualizado este agente específico en mucho tiempo
-    const isTerminated = 
-      health <= 10 || 
-      !simulationActive || 
-      (now - lastUpdateTime > TIMEOUT_THRESHOLD && lastUpdateTime > 0);
-    
-    if (isTerminated) {
-      terminated++;
-    } else if (
-      currentActivity.includes("IDLE") ||
-      currentActivity === "Unknown" ||
-      currentActivity === ""
-    ) {
-      idle++;
-    } else {
-      working++;
-    }
-  });
-  
-  // Actualizar el estado con los nuevos valores
-  setActivityData([
-    { name: "Working", value: working },
-    { name: "Idle", value: idle },
-    { name: "Terminated", value: terminated },
-  ]);
-};
+
+      // Determinar el estado del agente basado en sus datos
+      const health = (agentStateData as AgentState).health || 70;
+      const currentActivity =
+        (agentStateData as AgentState).currentActivity || "";
+      const lastUpdateTime = agentLastUpdate[agentName] || 0;
+
+      // Criterios para marcar un agente como terminado:
+      // 1. Salud muy baja (agente muerto)
+      // 2. Simulación inactiva (no se reciben más datos)
+      // 3. No se ha actualizado este agente específico en mucho tiempo
+      const isTerminated =
+        health <= 10 ||
+        !simulationActive ||
+        (now - lastUpdateTime > TIMEOUT_THRESHOLD && lastUpdateTime > 0);
+
+      if (isTerminated) {
+        terminated++;
+      } else if (
+        currentActivity.includes("IDLE") ||
+        currentActivity === "Unknown" ||
+        currentActivity === ""
+      ) {
+        idle++;
+      } else {
+        working++;
+      }
+    });
+
+    // Actualizar el estado con los nuevos valores
+    setActivityData([
+      { name: "Working", value: working },
+      { name: "Idle", value: idle },
+      { name: "Terminated", value: terminated },
+    ]);
+  };
   // Agregar este nuevo useEffect
   useEffect(() => {
     // Calcular resumen de actividad inicial
@@ -629,7 +634,6 @@ const calculateAgentWellbeing = (agentStateData: AgentState): number => {
           }));
           setAgentsData(formattedAgents);
 
-
           agentsLoadedRef.current = true;
           console.log("Agentes cargados con éxito:", uniqueAgents.length);
         } catch (error) {
@@ -685,26 +689,26 @@ const calculateAgentWellbeing = (agentStateData: AgentState): number => {
   };
 
   // Añadir este useEffect para verificar periódicamente la actividad
-useEffect(() => {
-  const checkSimulationActivity = () => {
-    const now = Date.now();
-    
-    // Si no hay actualizaciones recientes para ningún agente, marcar simulación como inactiva
-    const hasRecentUpdates = Object.values(agentLastUpdate).some(
-      timestamp => (now - timestamp) < TIMEOUT_THRESHOLD
-    );
-    
-    if (!hasRecentUpdates && Object.keys(agentLastUpdate).length > 0) {
-      setSimulationActive(false);
-    }
-  };
-  
-  const intervalId = setInterval(checkSimulationActivity, 5000);
-  
-  return () => {
-    clearInterval(intervalId);
-  };
-}, [agentLastUpdate]);
+  useEffect(() => {
+    const checkSimulationActivity = () => {
+      const now = Date.now();
+
+      // Si no hay actualizaciones recientes para ningún agente, marcar simulación como inactiva
+      const hasRecentUpdates = Object.values(agentLastUpdate).some(
+        (timestamp) => now - timestamp < TIMEOUT_THRESHOLD
+      );
+
+      if (!hasRecentUpdates && Object.keys(agentLastUpdate).length > 0) {
+        setSimulationActive(false);
+      }
+    };
+
+    const intervalId = setInterval(checkSimulationActivity, 5000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [agentLastUpdate]);
 
   const [selectedType, setSelectedType] = useState<ParameterType>("integer");
   const [selectedParameter, setSelectedParameter] = useState("currentActivity");
@@ -713,7 +717,6 @@ useEffect(() => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const router = useRouter();
 
-  
   const [primaryVariable, setPrimaryVariable] = useState("efficiency");
   const [secondaryVariable, setSecondaryVariable] = useState("productivity");
   const [analysisType, setAnalysisType] = useState("correlation");
@@ -723,9 +726,8 @@ useEffect(() => {
   const [showRegressionLine, setShowRegressionLine] = useState(true);
   const [distributionBins, setDistributionBins] = useState(10);
   const [selectedAgentData, setSelectedAgentData] = useState<any>(null);
-  
+
   useEffect(() => {
-   
     if (selectedAgent) {
       console.log(
         "Configurando actualización periódica para el agente:",
@@ -782,45 +784,37 @@ useEffect(() => {
     return "Stable";
   };
 
+  const calculateWellbeingIndex = (data: any[]): number => {
+    if (data.length === 0) return 0;
 
-const calculateWellbeingIndex = (data: any[]): number => {
-  if (data.length === 0) return 0;
+    const recentData = data.slice(-10);
 
-  const recentData = data.slice(-10);
+    const positiveEmotions = calculateMean(
+      recentData.map((item) => {
+        const happiness = item.HappinessSadness || 0;
+        return happiness > 0 ? happiness : 0;
+      })
+    );
 
-  
-  const positiveEmotions = calculateMean(
-    recentData.map((item) => {
-      const happiness = item.HappinessSadness || 0;
-      return happiness > 0 ? happiness : 0;
-    })
-  );
+    const negativeEmotions = calculateMean(
+      recentData.map((item) => {
+        const happiness = item.HappinessSadness || 0;
+        return happiness < 0 ? Math.abs(happiness) : 0;
+      })
+    );
 
-  
-  const negativeEmotions = calculateMean(
-    recentData.map((item) => {
-      const happiness = item.HappinessSadness || 0;
-      return happiness < 0 ? Math.abs(happiness) : 0;
-    })
-  );
+    const avgHealth =
+      calculateMean(recentData.map((item) => item.health || 0)) / 100;
 
-  
-  const avgHealth = calculateMean(
-    recentData.map((item) => item.health || 0)
-  ) / 100; 
+    const wellbeingRaw = positiveEmotions - negativeEmotions + avgHealth;
 
-  
-  const wellbeingRaw = positiveEmotions - negativeEmotions + avgHealth;
-  
-  
-  return normalizeValue(wellbeingRaw) * 100;
-};
+    return normalizeValue(wellbeingRaw) * 100;
+  };
 
-
-const normalizeValue = (value: number): number => {
-  // Asegurar que el valor esté entre 0 y 1
-  return Math.min(1, Math.max(0, value));
-};
+  const normalizeValue = (value: number): number => {
+    // Asegurar que el valor esté entre 0 y 1
+    return Math.min(1, Math.max(0, value));
+  };
 
   // Datos de ejemplo para gráficos de parámetros
   const getParameterData = () => {
@@ -920,12 +914,11 @@ const normalizeValue = (value: number): number => {
     if (xDenominator === 0 || yDenominator === 0) return 0;
     return numerator / Math.sqrt(xDenominator * yDenominator);
   };
-  
+
   const filteredData = useMemo(() => {
     return simulationData.slice(timeRange[0], timeRange[1] + 1);
   }, [timeRange]);
 
-  
   const detectOutliers = (
     data: number[]
   ): { indices: number[]; lowerBound: number; upperBound: number } => {
@@ -933,7 +926,6 @@ const normalizeValue = (value: number): number => {
 
     const sortedData = [...data].sort((a, b) => a - b);
 
-    
     const q1Index = Math.floor(sortedData.length * 0.25);
     const q3Index = Math.floor(sortedData.length * 0.75);
 
@@ -1222,7 +1214,10 @@ const normalizeValue = (value: number): number => {
   }
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden dark:bg-gray-900 dark:text-white">
+    <div
+      id="analytics-main"
+      className="flex h-screen bg-background overflow-hidden dark:bg-gray-900 dark:text-white"
+    >
       {/* Sidebar mejorado con animaciones y mejor estructura */}
       <div
         className={`analytics-sidebar transition-all duration-300 ease-in-out ${
@@ -1249,21 +1244,24 @@ const normalizeValue = (value: number): number => {
             {navigationItems.map((item) => (
               <button
                 key={item.id}
+                id={`nav-${item.id}`} // Asegúrate de que este ID coincida con el que estás buscando
                 onClick={() => {
                   setActiveSection(item.id);
                   if (isMobile) setSidebarOpen(false);
                 }}
                 className={`w-full flex items-center px-3 py-3 rounded-md transition-all duration-200 hover:bg-muted/80 group ${
                   activeSection === item.id
-                    ? "bg-primary/10 text-primary shadow-sm dark:bg-blue-500/20 dark:text-blue-300" // Estilo activo en dark mode
-                    : "text-muted-foreground dark:text-gray-400" // Estilo inactivo en dark mode
+                    ? "bg-primary/10 text-primary shadow-sm dark:bg-blue-500/20 dark:text-blue-300"
+                    : "text-muted-foreground dark:text-gray-400"
                 }`}
               >
                 <span className="flex-shrink-0 group-hover:text-foreground dark:group-hover:text-white">
                   {item.icon}
                 </span>
                 <div
-                  className={`ml-3 flex flex-col transition-opacity duration-300 ${sidebarOpen ? "opacity-100" : "opacity-0 md:opacity-100"}`}
+                  className={`ml-3 flex flex-col transition-opacity duration-300 ${
+                    sidebarOpen ? "opacity-100" : "opacity-0 md:opacity-100"
+                  }`}
                 >
                   <span className="text-sm font-medium text-left text-foreground dark:text-white">
                     {item.label}
@@ -1326,9 +1324,9 @@ const normalizeValue = (value: number): number => {
           <div className="container mx-auto max-w-8xl">
             {/* Dashboard / Home */}
             {activeSection === "home" && (
-              <div className="animate-fadeIn space-y-6">
+              <div id="home-section" className="animate-fadeIn space-y-6">
                 {/* Estadísticas rápidas arriba */}
-                <div className="grid md:grid-cols-3 gap-4">
+                <div id="stats-section" className="grid md:grid-cols-3 gap-4">
                   {/* Card for Quick Stats */}
                   <Card className="col-span-3 md:col-span-1 dark:bg-gray-800 dark:border-gray-700">
                     <CardHeader className="pb-2">
@@ -1342,25 +1340,26 @@ const normalizeValue = (value: number): number => {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Tarjeta 1: Bienestar Emocional */}
-                                <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
-                                  <div>
-                                    <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">
-                                      Emotional Wellbeing
-                                    </p>
-                                    <h3 className="text-2xl font-bold dark:text-white truncate">
-                                      {(() => {
-                                        
-                                        const wellbeingIndex = calculateWellbeingIndex(simulationData);
-                                        return isNaN(wellbeingIndex) || !isFinite(wellbeingIndex) 
-                                          ? "N/A" 
-                                          : `${wellbeingIndex.toFixed(1)}%`;
-                                      })()}
-                                    </h3>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground dark:text-gray-500 mt-2">
-                                    Based on positive/negative emotions and health
-                                  </p>
-</div>
+                        <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground dark:text-gray-400 mb-2">
+                              Emotional Wellbeing
+                            </p>
+                            <h3 className="text-2xl font-bold dark:text-white truncate">
+                              {(() => {
+                                const wellbeingIndex =
+                                  calculateWellbeingIndex(simulationData);
+                                return isNaN(wellbeingIndex) ||
+                                  !isFinite(wellbeingIndex)
+                                  ? "N/A"
+                                  : `${wellbeingIndex.toFixed(1)}%`;
+                              })()}
+                            </h3>
+                          </div>
+                          <p className="text-xs text-muted-foreground dark:text-gray-500 mt-2">
+                            Based on positive/negative emotions and health
+                          </p>
+                        </div>
 
                         {/* Tarjeta 2: Salud Económica */}
                         <div className="bg-muted/40 p-5 rounded-lg dark:bg-gray-700/40 min-h-[140px] flex flex-col justify-between">
@@ -2096,9 +2095,9 @@ const normalizeValue = (value: number): number => {
                       </TabsContent>
 
                       {/* Distribution Analysis Tab */}
-                <TabsContent value="distribution" className="space-y-4">
-                  <DistributionAnalysis data={filteredData} />
-                </TabsContent>
+                      <TabsContent value="distribution" className="space-y-4">
+                        <DistributionAnalysis data={filteredData} />
+                      </TabsContent>
 
                       {/* Time Series Analysis Tab */}
                       <TabsContent value="time-series" className="space-y-4">
@@ -2288,83 +2287,118 @@ const normalizeValue = (value: number): number => {
                             <p className="text-muted-foreground dark:text-gray-400 col-span-3">
                               Loading agents...
                             </p>
-                            ) : (
-                              loadedAgents.map((agentName, index) => {
-                                // Extraer datos del agente desde el WebSocket
-                                const agentInfo = agentTaskLogs[agentName] || {};
-                                let agentStatus = "Active";
-                                
-                                try {
-                                  // Determinar el estado basado en los datos del agente
-                                  let agentStateData: AgentState = {};
-                                  if (agentInfo.state) {
-                                    if (typeof agentInfo.state === 'string') {
-                                      agentStateData = JSON.parse(agentInfo.state);
-                                    } else {
-                                      agentStateData = agentInfo.state;
-                                    }
-                                  }
-                                  
-                                  const health = agentStateData.health || 70;
-                                  const lastUpdateTime = agentLastUpdate[agentName] || 0;
-                                  const now = Date.now();
-                                  
-                                  // Criterios para determinar el estado
-                                  if (health <= 10 || !simulationActive || (now - lastUpdateTime > TIMEOUT_THRESHOLD && lastUpdateTime > 0)) {
-                                    agentStatus = "Terminated";
-                                  } else if (health < 30) {
-                                    agentStatus = "Critical";
-                                  } else if (health < 60) {
-                                    agentStatus = "Struggling";
+                          ) : (
+                            loadedAgents.map((agentName, index) => {
+                              // Extraer datos del agente desde el WebSocket
+                              const agentInfo = agentTaskLogs[agentName] || {};
+                              let agentStatus = "Active";
+
+                              try {
+                                // Determinar el estado basado en los datos del agente
+                                let agentStateData: AgentState = {};
+                                if (agentInfo.state) {
+                                  if (typeof agentInfo.state === "string") {
+                                    agentStateData = JSON.parse(
+                                      agentInfo.state
+                                    );
                                   } else {
-                                    agentStatus = "Active";
+                                    agentStateData = agentInfo.state;
                                   }
-                                } catch (error) {
-                                  console.error("Error procesando estado del agente:", error);
                                 }
-                                
-                                return (
-                                  <Card
-                                    key={agentName}
-                                    className="dark:bg-gray-800 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
-                                    onClick={() => {
-                                      setSelectedAgent(`${index + 1}`);
-                                    }}
-                                  >
-                                    <CardContent className="p-4">
-                                      <div className="flex items-center space-x-3">
-                                        <div className={`h-10 w-10 rounded-full flex items-center justify-center 
-                                          ${agentStatus === "Active" ? "dark:bg-green-900/30" : 
-                                            agentStatus === "Struggling" ? "dark:bg-yellow-900/30" :
-                                            agentStatus === "Critical" ? "dark:bg-red-900/30" :
-                                            "dark:bg-gray-900/30"}`}>
-                                          <Users className={`h-5 w-5 
-                                            ${agentStatus === "Active" ? "text-green-500" : 
-                                              agentStatus === "Struggling" ? "text-yellow-500" :
-                                              agentStatus === "Critical" ? "text-red-500" :
-                                              "text-gray-500"}`} />
-                                        </div>
-                                        <div>
-                                          <h4 className="font-medium dark:text-white">
-                                            Family {index + 1}
-                                          </h4>
-                                          <div className="flex items-center">
-                                            <span className={`w-2 h-2 rounded-full mr-2
-                                              ${agentStatus === "Active" ? "bg-green-500" : 
-                                                agentStatus === "Struggling" ? "bg-yellow-500" :
-                                                agentStatus === "Critical" ? "bg-red-500" :
-                                                "bg-gray-500"}`}></span>
-                                            <p className="text-xs text-muted-foreground dark:text-gray-400">
-                                              {agentName} {agentStatus === "Terminated" ? "(Terminated)" : ""}
-                                            </p>
-                                          </div>
+
+                                const health = agentStateData.health || 70;
+                                const lastUpdateTime =
+                                  agentLastUpdate[agentName] || 0;
+                                const now = Date.now();
+
+                                // Criterios para determinar el estado
+                                if (
+                                  health <= 10 ||
+                                  !simulationActive ||
+                                  (now - lastUpdateTime > TIMEOUT_THRESHOLD &&
+                                    lastUpdateTime > 0)
+                                ) {
+                                  agentStatus = "Terminated";
+                                } else if (health < 30) {
+                                  agentStatus = "Critical";
+                                } else if (health < 60) {
+                                  agentStatus = "Struggling";
+                                } else {
+                                  agentStatus = "Active";
+                                }
+                              } catch (error) {
+                                console.error(
+                                  "Error procesando estado del agente:",
+                                  error
+                                );
+                              }
+
+                              return (
+                                <Card
+                                  key={agentName}
+                                  className="dark:bg-gray-800 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
+                                  onClick={() => {
+                                    setSelectedAgent(`${index + 1}`);
+                                  }}
+                                >
+                                  <CardContent className="p-4">
+                                    <div className="flex items-center space-x-3">
+                                      <div
+                                        className={`h-10 w-10 rounded-full flex items-center justify-center 
+                                          ${
+                                            agentStatus === "Active"
+                                              ? "dark:bg-green-900/30"
+                                              : agentStatus === "Struggling"
+                                                ? "dark:bg-yellow-900/30"
+                                                : agentStatus === "Critical"
+                                                  ? "dark:bg-red-900/30"
+                                                  : "dark:bg-gray-900/30"
+                                          }`}
+                                      >
+                                        <Users
+                                          className={`h-5 w-5 
+                                            ${
+                                              agentStatus === "Active"
+                                                ? "text-green-500"
+                                                : agentStatus === "Struggling"
+                                                  ? "text-yellow-500"
+                                                  : agentStatus === "Critical"
+                                                    ? "text-red-500"
+                                                    : "text-gray-500"
+                                            }`}
+                                        />
+                                      </div>
+                                      <div>
+                                        <h4 className="font-medium dark:text-white">
+                                          Family {index + 1}
+                                        </h4>
+                                        <div className="flex items-center">
+                                          <span
+                                            className={`w-2 h-2 rounded-full mr-2
+                                              ${
+                                                agentStatus === "Active"
+                                                  ? "bg-green-500"
+                                                  : agentStatus === "Struggling"
+                                                    ? "bg-yellow-500"
+                                                    : agentStatus === "Critical"
+                                                      ? "bg-red-500"
+                                                      : "bg-gray-500"
+                                              }`}
+                                          ></span>
+                                          <p className="text-xs text-muted-foreground dark:text-gray-400">
+                                            {agentName}{" "}
+                                            {agentStatus === "Terminated"
+                                              ? "(Terminated)"
+                                              : ""}
+                                          </p>
                                         </div>
                                       </div>
-                                    </CardContent>
-                                  </Card>
-                                );
-                              })
-                            )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              );
+                            })
+                          )}
                         </div>
                       </div>
                     </CardContent>

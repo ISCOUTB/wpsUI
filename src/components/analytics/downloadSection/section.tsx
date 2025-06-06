@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Download,
   Eye,
@@ -45,7 +45,7 @@ import {
   type CSVData,
   calculateStatistics,
 } from "@/lib/csvUtils";
-
+import startDownloadTour from "@/components/drive/tourdownload";
 export function DownloadSection() {
   const router = useRouter();
   const { toast } = useToast();
@@ -58,6 +58,14 @@ export function DownloadSection() {
   const [selectedParam, setSelectedParam] = useState<string>("");
   const [numericParams, setNumericParams] = useState<string[]>([]);
   const [stats, setStats] = useState<any>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      startDownloadTour();
+    }, 2000); // Aumentar el tiempo de espera
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Load preview data
   const loadPreviewData = async () => {
@@ -277,57 +285,57 @@ export function DownloadSection() {
     const columns = Object.keys(previewData[0]);
 
     return (
-      <div className="space-y-4 mt-6 slide-in">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium flex items-center font-clash">
-        <Eye className="mr-2 h-5 w-5 text-muted-foreground" />
-        Data Preview
-        </h3>
-        <Badge variant="outline" className="bg-secondary border-border">
-        Showing 5 rows
-        </Badge>
-      </div>
-
-      <div className="border border-border rounded-md overflow-x-auto">
-        <div className="w-full min-w-max">
-        <ScrollArea className="h-[300px] custom-scrollbar ">
-          <Table>
-          <TableHeader>
-            <TableRow className="bg-secondary/50">
-            {columns.map((column) => (
-              <TableHead
-              key={column}
-              className="whitespace-nowrap font-clash"
-              >
-              {column}
-              </TableHead>
-            ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {previewData.map((row, rowIndex) => (
-            <TableRow
-              key={rowIndex}
-              className="border-border hover:bg-secondary/30"
-            >
-              {columns.map((column) => (
-              <TableCell
-                key={`${rowIndex}-${column}`}
-                className="whitespace-nowrap"
-              >
-                {formatValue(row[column])}
-              </TableCell>
-              ))}
-            </TableRow>
-            ))}
-          </TableBody>
-          </Table>
-        </ScrollArea>
+      <div id="data-preview" className="space-y-4 mt-6 slide-in">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium flex items-center font-clash">
+            <Eye className="mr-2 h-5 w-5 text-muted-foreground" />
+            Data Preview
+          </h3>
+          <Badge variant="outline" className="bg-secondary border-border">
+            Showing 5 rows
+          </Badge>
         </div>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        This preview shows the first 5 rows of the data to be downloaded.
-      </p>
+
+        <div className="border border-border rounded-md overflow-x-auto">
+          <div className="w-full min-w-max">
+            <ScrollArea className="h-[300px] custom-scrollbar ">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-secondary/50">
+                    {columns.map((column) => (
+                      <TableHead
+                        key={column}
+                        className="whitespace-nowrap font-clash"
+                      >
+                        {column}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {previewData.map((row, rowIndex) => (
+                    <TableRow
+                      key={rowIndex}
+                      className="border-border hover:bg-secondary/30"
+                    >
+                      {columns.map((column) => (
+                        <TableCell
+                          key={`${rowIndex}-${column}`}
+                          className="whitespace-nowrap"
+                        >
+                          {formatValue(row[column])}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          This preview shows the first 5 rows of the data to be downloaded.
+        </p>
       </div>
     );
   };
@@ -336,7 +344,10 @@ export function DownloadSection() {
     <Card className="analytics-card overflow-hidden">
       <CardHeader className="bg-secondary/30 border-b border-border">
         <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center text-2xl font-clash">
+          <CardTitle
+            id="download-title"
+            className="flex items-center text-2xl font-clash"
+          >
             <Download className="mr-2 h-6 w-6 text-primary" />
             Export Simulation Data
           </CardTitle>
@@ -345,6 +356,7 @@ export function DownloadSection() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  id="back-to-simulator-button"
                   variant="outline"
                   size="sm"
                   className="border-border bg-secondary hover:bg-secondary/80"
@@ -360,7 +372,10 @@ export function DownloadSection() {
             </Tooltip>
           </TooltipProvider>
         </div>
-        <CardDescription className="text-base text-muted-foreground">
+        <CardDescription
+          id="download-description"
+          className="text-base text-muted-foreground"
+        >
           Download the simulation results for detailed analysis.
         </CardDescription>
       </CardHeader>
@@ -371,6 +386,7 @@ export function DownloadSection() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  id="view-preview-button"
                   onClick={loadPreviewData}
                   variant="outline"
                   disabled={isLoading}
@@ -399,6 +415,7 @@ export function DownloadSection() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  id="download-csv-button"
                   onClick={downloadCSV}
                   disabled={isLoading}
                   className="w-full sm:w-auto bg-primary hover:bg-primary/80 text-primary-foreground focus-ring"

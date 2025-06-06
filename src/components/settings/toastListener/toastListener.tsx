@@ -7,9 +7,9 @@ export function SimulationToastListener() {
     const handler = () => {
       toast({
         variant: "default",
-        title: "Simulación finalizada",
+        title: "Simulation Finished",
         description:
-          "La simulación ha terminado. Ahora puede iniciar una nueva.",
+          "Simulation has ended. Now you can review the results or restart the simulation.",
       });
     };
     if (window.electronAPI && window.electronAPI.on) {

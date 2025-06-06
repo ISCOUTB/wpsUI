@@ -1,79 +1,83 @@
-import { driver } from "driver.js"
-import "driver.js/dist/driver.css"
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 
 // Constantes para las claves de localStorage
 const TOUR_KEYS = {
   SETTINGS: "settings_tour_completed",
   SIMULATION: "simulation_tour_completed",
-}
+};
 
 // Variable para controlar si el tour de configuración ya se mostró en esta sesión
-let settingsTourShownThisSession = false
+let settingsTourShownThisSession = false;
 
 // Variable para controlar si el tour de simulación ya se mostró en esta sesión
-let simulationTourShownThisSession = false
+let simulationTourShownThisSession = false;
 
 // Función para verificar si un tour ya fue completado
 const isTourCompleted = (tourKey) => {
-  if (typeof window === "undefined") return false
-  return localStorage.getItem(tourKey) === "true"
-}
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(tourKey) === "true";
+};
 
 // Función para marcar un tour como completado
 const markTourAsCompleted = (tourKey) => {
   if (typeof window !== "undefined") {
-    localStorage.setItem(tourKey, "true")
+    localStorage.setItem(tourKey, "true");
   }
-}
+};
 
 // Función para resetear el estado de un tour (útil para desarrollo o si el usuario quiere verlo de nuevo)
 export const resetTour = (tourType) => {
   if (typeof window !== "undefined") {
-    const tourKey = tourType === "settings" ? TOUR_KEYS.SETTINGS : TOUR_KEYS.SIMULATION
-    localStorage.removeItem(tourKey)
-    console.log(`Tour ${tourType} reseteado`)
+    const tourKey =
+      tourType === "settings" ? TOUR_KEYS.SETTINGS : TOUR_KEYS.SIMULATION;
+    localStorage.removeItem(tourKey);
+    console.log(`Tour ${tourType} reseteado`);
 
     // Resetear la variable de sesión correspondiente
     if (tourType === "settings") {
-      settingsTourShownThisSession = false
+      settingsTourShownThisSession = false;
     } else if (tourType === "simulation") {
-      simulationTourShownThisSession = false
+      simulationTourShownThisSession = false;
     }
   }
-}
+};
 
 export const startSettingsTour = (forceStart = false) => {
   // Si se fuerza el inicio (botón manual), siempre mostrar
   if (forceStart) {
-    console.log("Tour de configuración iniciado manualmente")
-    executeSettingsTour()
-    return
+    console.log("Tour de configuración iniciado manualmente");
+    executeSettingsTour();
+    return;
   }
 
   // Verificar si ya se mostró en esta sesión
   if (settingsTourShownThisSession) {
-    console.log("Tour de configuración ya se mostró en esta sesión")
-    return
+    console.log("Tour de configuración ya se mostró en esta sesión");
+    return;
   }
 
   // Verificar si el tour ya fue completado permanentemente
   if (isTourCompleted(TOUR_KEYS.SETTINGS)) {
-    console.log("Tour de configuración ya fue completado anteriormente")
-    return
+    console.log("Tour de configuración ya fue completado anteriormente");
+    return;
   }
 
   // Si llegamos aquí, es la primera vez en esta sesión y el tour no ha sido completado
-  console.log("Primera visita a configuración en esta sesión - iniciando tour")
-  settingsTourShownThisSession = true
-  executeSettingsTour()
-}
+  console.log("Primera visita a configuración en esta sesión - iniciando tour");
+  settingsTourShownThisSession = true;
+  executeSettingsTour();
+};
 
 // Función auxiliar para ejecutar el tour de configuración
 const executeSettingsTour = () => {
   // Verificar que estamos en el proceso de renderizado de Electron
-  if (typeof window === "undefined" || !document.getElementById("config-agents")) {
-    console.log("DOM no está listo o no estamos en el navegador")
-    return
+  if (
+    typeof window === "undefined" ||
+    !document.getElementById("config-agents")
+  ) {
+    console.log("DOM no está listo o no estamos en el navegador");
+    return;
   }
 
   // Función para verificar si los elementos del DOM están listos
@@ -89,27 +93,27 @@ const executeSettingsTour = () => {
       "config-irrigation",
       "config-emotions",
       "config-years",
-    ]
+    ];
 
-    return elements.every((id) => document.getElementById(id))
-  }
+    return elements.every((id) => document.getElementById(id));
+  };
 
   // Intentar iniciar el tour cuando los elementos estén listos
   const tryStartTour = () => {
     if (!checkElementsReady()) {
-      console.log("Esperando a que los elementos estén listos...")
-      setTimeout(tryStartTour, 500)
-      return
+      console.log("Esperando a que los elementos estén listos...");
+      setTimeout(tryStartTour, 500);
+      return;
     }
 
-    console.log("Elementos listos, iniciando tour...")
+    console.log("Elementos listos, iniciando tour...");
 
     const driverObj = driver({
       showProgress: true,
       onDestroyed: () => {
         // Marcar el tour como completado cuando termine
-        markTourAsCompleted(TOUR_KEYS.SETTINGS)
-        console.log("Tour de configuración completado y guardado")
+        markTourAsCompleted(TOUR_KEYS.SETTINGS);
+        console.log("Tour de configuración completado y guardado");
       },
       steps: [
         {
@@ -166,7 +170,8 @@ const executeSettingsTour = () => {
           element: "#config-seeds",
           popover: {
             title: "Seeds",
-            description: "Define the amount of seeds available for planting. More seeds allow for planting more crops.",
+            description:
+              "Define the amount of seeds available for planting. More seeds allow for planting more crops.",
             side: "left",
             align: "start",
           },
@@ -212,89 +217,98 @@ const executeSettingsTour = () => {
           },
         },
       ],
-    })
+    });
 
     try {
-      driverObj.drive()
-      console.log("Tour iniciado correctamente")
+      driverObj.drive();
+      console.log("Tour iniciado correctamente");
     } catch (error) {
-      console.error("Error al iniciar el tour:", error)
+      console.error("Error al iniciar el tour:", error);
     }
-  }
+  };
 
   // Iniciar el proceso de verificación
-  tryStartTour()
-}
+  tryStartTour();
+};
 
 // Función para verificar el estado del tour de configuración en la sesión actual
 export const shouldShowSettingsTourThisSession = () => {
-  return !settingsTourShownThisSession && !isTourCompleted(TOUR_KEYS.SETTINGS)
-}
+  return !settingsTourShownThisSession && !isTourCompleted(TOUR_KEYS.SETTINGS);
+};
 
 // Nueva función para el tour de simulación con control de sesión
 export const startSimulationTour = (forceStart = false) => {
   // Si se fuerza el inicio (botón manual), siempre mostrar
   if (forceStart) {
-    console.log("Tour de simulación iniciado manualmente")
-    executeSimulationTour()
-    return
+    console.log("Tour de simulación iniciado manualmente");
+    executeSimulationTour();
+    return;
   }
 
   // Verificar si ya se mostró en esta sesión
   if (simulationTourShownThisSession) {
-    console.log("Tour de simulación ya se mostró en esta sesión")
-    return
+    console.log("Tour de simulación ya se mostró en esta sesión");
+    return;
   }
 
   // Verificar si el tour ya fue completado permanentemente
   if (isTourCompleted(TOUR_KEYS.SIMULATION)) {
-    console.log("Tour de simulación ya fue completado anteriormente")
-    return
+    console.log("Tour de simulación ya fue completado anteriormente");
+    return;
   }
 
   // Si llegamos aquí, es la primera vez en esta sesión y el tour no ha sido completado
-  console.log("Primera visita a simulation.tsx en esta sesión - iniciando tour")
-  simulationTourShownThisSession = true
-  executeSimulationTour()
-}
+  console.log(
+    "Primera visita a simulation.tsx en esta sesión - iniciando tour"
+  );
+  simulationTourShownThisSession = true;
+  executeSimulationTour();
+};
 
 // Función auxiliar para ejecutar el tour de simulación
 const executeSimulationTour = () => {
   // Verificar que estamos en el proceso de renderizado de Electron
   if (typeof window === "undefined") {
-    console.log("DOM no está listo o no estamos en el navegador")
-    return
+    console.log("DOM no está listo o no estamos en el navegador");
+    return;
   }
 
   // Función para verificar si los elementos del DOM están listos
   const checkElementsReady = () => {
-    const elements = ["sidebar", "farm-info", "simulation-map", "stop-button", "tab-content"]
-    return elements.every((id) => document.getElementById(id))
-  }
+    const elements = [
+      "sidebar",
+      "farm-info",
+      "simulation-map",
+      "stop-button",
+      "tab-content",
+    ];
+    return elements.every((id) => document.getElementById(id));
+  };
 
   // Intentar iniciar el tour cuando los elementos estén listos
   const tryStartTour = () => {
     if (!checkElementsReady()) {
-      console.log("Esperando a que los elementos estén listos...")
-      setTimeout(tryStartTour, 500)
-      return
+      console.log("Esperando a que los elementos estén listos...");
+      setTimeout(tryStartTour, 500);
+      return;
     }
 
-    console.log("Elementos listos, iniciando tour de simulación...")
+    console.log("Elementos listos, iniciando tour de simulación...");
 
     const driverObj = driver({
       showProgress: true,
       onDestroyed: () => {
         // Marcar el tour como completado cuando termine
-        markTourAsCompleted(TOUR_KEYS.SIMULATION)
-        console.log("Tour de simulación completado y guardado")
+        markTourAsCompleted(TOUR_KEYS.SIMULATION);
+        console.log("Tour de simulación completado y guardado");
       },
       steps: [
         {
           element: "#sidebar",
           popover: {
             title: "Navigation Sidebar",
-            description: "Access different sections of the application from this sidebar menu.",
+            description:
+              "Access different sections of the application from this sidebar menu.",
             side: "right",
             align: "start",
           },
@@ -303,7 +317,8 @@ const executeSimulationTour = () => {
           element: "#farm-info",
           popover: {
             title: "Farm Information",
-            description: "View detailed information about the farm and its current status.",
+            description:
+              "View detailed information about the farm and its current status.",
             side: "right",
             align: "start",
           },
@@ -312,7 +327,8 @@ const executeSimulationTour = () => {
           element: "#simulation-map",
           popover: {
             title: "Simulation Map",
-            description: "Visual representation of the farm simulation showing the land, crops, and agents.",
+            description:
+              "Visual representation of the farm simulation showing the land, crops, and agents.",
             side: "left",
             align: "start",
           },
@@ -321,7 +337,8 @@ const executeSimulationTour = () => {
           element: "#stop-button",
           popover: {
             title: "Stop Simulation",
-            description: "Click this button to stop the current simulation and the Java process running it.",
+            description:
+              "Click this button to stop the current simulation and the Java process running it.",
             side: "top",
             align: "center",
           },
@@ -330,32 +347,96 @@ const executeSimulationTour = () => {
           element: "#tab-content",
           popover: {
             title: "Data Visualization",
-            description: "View charts and data about the simulation progress and results.",
+            description:
+              "View charts and data about the simulation progress and results.",
             side: "top",
             align: "center",
           },
         },
       ],
-    })
+    });
 
     try {
-      driverObj.drive()
-      console.log("Tour de simulación iniciado correctamente")
+      driverObj.drive();
+      console.log("Tour de simulación iniciado correctamente");
     } catch (error) {
-      console.error("Error al iniciar el tour de simulación:", error)
+      console.error("Error al iniciar el tour de simulación:", error);
     }
-  }
+  };
 
   // Iniciar el proceso de verificación
-  tryStartTour()
-}
+  tryStartTour();
+};
 
 // Función para verificar si es la primera vez que el usuario visita la simulación
 export const isFirstTimeUser = () => {
-  return !isTourCompleted(TOUR_KEYS.SIMULATION)
-}
+  return !isTourCompleted(TOUR_KEYS.SIMULATION);
+};
 
 // Función para verificar el estado del tour en la sesión actual
 export const shouldShowTourThisSession = () => {
-  return !simulationTourShownThisSession && !isTourCompleted(TOUR_KEYS.SIMULATION)
-}
+  return (
+    !simulationTourShownThisSession && !isTourCompleted(TOUR_KEYS.SIMULATION)
+  );
+};
+
+export const startNavigationTour = () => {
+ const checkElementsReady = () => {
+  const elements = ["nav-home", "nav-statistics", "nav-agents"];
+  return elements.every((id) => document.getElementById(id));
+};
+
+  const tryStartTour = () => {
+    if (!checkElementsReady()) {
+      console.log(
+        "Esperando a que los elementos de navegación estén listos..."
+      );
+      setTimeout(tryStartTour, 500);
+      return;
+    }
+
+    console.log("Elementos de navegación listos, iniciando tour...");
+
+    const driverObj = driver({
+      showProgress: true,
+      steps: [
+        {
+          element: "#nav-home",
+          popover: {
+            title: "Dashboard",
+            description: "Access the simulation overview and key metrics.",
+            side: "right",
+            align: "start",
+          },
+        },
+        {
+          element: "#nav-statistics",
+          popover: {
+            title: "Statistics",
+            description: "Explore advanced statistical analysis.",
+            side: "right",
+            align: "start",
+          },
+        },
+        {
+          element: "#nav-agents",
+          popover: {
+            title: "Agents",
+            description: "Monitor the current status of agents.",
+            side: "right",
+            align: "start",
+          },
+        },
+      ],
+    });
+
+    try {
+      driverObj.drive();
+      console.log("Tour de navegación iniciado correctamente");
+    } catch (error) {
+      console.error("Error al iniciar el tour de navegación:", error);
+    }
+  };
+
+  tryStartTour();
+};
