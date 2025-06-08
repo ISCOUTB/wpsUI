@@ -331,7 +331,7 @@ export default function SimulatorConfigPage() {
                 className="bg-[#181c20] text-white border border-[#2664eb] hover:bg-[#232830]"
                 onClick={handleStartTour}
               >
-                Ver Tour
+                View Tour
               </Button>
             )}
           </div>

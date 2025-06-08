@@ -103,8 +103,9 @@ const Sidebar: React.FC = () => {
             <Tooltip key={index}>
               <TooltipTrigger asChild>
                 <a
+                  id={`sidebar-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                   href={item.href}
-                  className="w-full flex items-center  bg-[#153c8f] border-[#2664eb] justify-center py-3 px-4 text-foreground hover:text-[##153c8f] rounded-lg transition-colors font-clash text-white hover:bg-[#2664eb] hover:shadow-lg"
+                  className="w-full flex items-center bg-[#153c8f] border-[#2664eb] justify-center py-3 px-4 text-foreground hover:text-[##153c8f] rounded-lg transition-colors font-clash text-white hover:bg-[#2664eb] hover:shadow-lg"
                   onClick={item.onClick}
                 >
                   {item.icon}

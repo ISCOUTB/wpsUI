@@ -1,40 +1,38 @@
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 
-// Constantes para las claves de localStorage
+// Constants for localStorage keys
 const TOUR_KEYS = {
   SETTINGS: "settings_tour_completed",
   SIMULATION: "simulation_tour_completed",
 };
 
-// Variable para controlar si el tour de configuración ya se mostró en esta sesión
+// Variables to control if tours have been shown in this session
 let settingsTourShownThisSession = false;
-
-// Variable para controlar si el tour de simulación ya se mostró en esta sesión
 let simulationTourShownThisSession = false;
 
-// Función para verificar si un tour ya fue completado
+// Function to check if a tour has been completed
 const isTourCompleted = (tourKey) => {
   if (typeof window === "undefined") return false;
   return localStorage.getItem(tourKey) === "true";
 };
 
-// Función para marcar un tour como completado
+// Function to mark a tour as completed
 const markTourAsCompleted = (tourKey) => {
   if (typeof window !== "undefined") {
     localStorage.setItem(tourKey, "true");
   }
 };
 
-// Función para resetear el estado de un tour (útil para desarrollo o si el usuario quiere verlo de nuevo)
+// Function to reset a tour state (useful for development or if the user wants to see it again)
 export const resetTour = (tourType) => {
   if (typeof window !== "undefined") {
     const tourKey =
       tourType === "settings" ? TOUR_KEYS.SETTINGS : TOUR_KEYS.SIMULATION;
     localStorage.removeItem(tourKey);
-    console.log(`Tour ${tourType} reseteado`);
+    console.log(`${tourType} tour reset`);
 
-    // Resetear la variable de sesión correspondiente
+    // Reset the corresponding session variable
     if (tourType === "settings") {
       settingsTourShownThisSession = false;
     } else if (tourType === "simulation") {
@@ -44,43 +42,43 @@ export const resetTour = (tourType) => {
 };
 
 export const startSettingsTour = (forceStart = false) => {
-  // Si se fuerza el inicio (botón manual), siempre mostrar
+  // If start is forced (manual button), always show
   if (forceStart) {
-    console.log("Tour de configuración iniciado manualmente");
+    console.log("Settings tour started manually");
     executeSettingsTour();
     return;
   }
 
-  // Verificar si ya se mostró en esta sesión
+  // Check if already shown in this session
   if (settingsTourShownThisSession) {
-    console.log("Tour de configuración ya se mostró en esta sesión");
+    console.log("Settings tour already shown in this session");
     return;
   }
 
-  // Verificar si el tour ya fue completado permanentemente
+  // Check if the tour was already completed permanently
   if (isTourCompleted(TOUR_KEYS.SETTINGS)) {
-    console.log("Tour de configuración ya fue completado anteriormente");
+    console.log("Settings tour was previously completed");
     return;
   }
 
-  // Si llegamos aquí, es la primera vez en esta sesión y el tour no ha sido completado
-  console.log("Primera visita a configuración en esta sesión - iniciando tour");
+  // If we reach here, it's the first time in this session and tour hasn't been completed
+  console.log("First visit to settings in this session - starting tour");
   settingsTourShownThisSession = true;
   executeSettingsTour();
 };
 
-// Función auxiliar para ejecutar el tour de configuración
+// Helper function to execute the settings tour
 const executeSettingsTour = () => {
-  // Verificar que estamos en el proceso de renderizado de Electron
+  // Verify that we are in the Electron rendering process
   if (
     typeof window === "undefined" ||
     !document.getElementById("config-agents")
   ) {
-    console.log("DOM no está listo o no estamos en el navegador");
+    console.log("DOM not ready or we are not in the browser");
     return;
   }
 
-  // Función para verificar si los elementos del DOM están listos
+  // Function to check if DOM elements are ready
   const checkElementsReady = () => {
     const elements = [
       "config-agents",
@@ -98,30 +96,30 @@ const executeSettingsTour = () => {
     return elements.every((id) => document.getElementById(id));
   };
 
-  // Intentar iniciar el tour cuando los elementos estén listos
+  // Try to start the tour when elements are ready
   const tryStartTour = () => {
     if (!checkElementsReady()) {
-      console.log("Esperando a que los elementos estén listos...");
+      console.log("Waiting for elements to be ready...");
       setTimeout(tryStartTour, 500);
       return;
     }
 
-    console.log("Elementos listos, iniciando tour...");
+    console.log("Elements ready, starting tour...");
 
     const driverObj = driver({
       showProgress: true,
       onDestroyed: () => {
-        // Marcar el tour como completado cuando termine
+        // Mark the tour as completed when it ends
         markTourAsCompleted(TOUR_KEYS.SETTINGS);
-        console.log("Tour de configuración completado y guardado");
+        console.log("Configuration tour completed and saved");
       },
       steps: [
         {
           element: "#config-agents",
           popover: {
-            title: "Number of Agents",
-            description:
-              "Define how many farmer agents will participate in the simulation. More agents mean more complex interactions.",
+            title: "Agents",
+            description: 
+              "Configure the number of autonomous entities, each running their own BDI (Beliefs, Desires, Intentions) cycle with emotional components. These agents model farming families, ecosystems, market operations, and more.",
             side: "right",
             align: "start",
           },
@@ -129,9 +127,9 @@ const executeSettingsTour = () => {
         {
           element: "#config-money",
           popover: {
-            title: "Initial Money",
-            description:
-              "Define the initial capital for each agent. This affects their initial investment capabilities.",
+            title: "Money",
+            description: 
+              "Set the initial financial capital for farm families. This resource increases when crops are sold and decreases with input purchases, loan repayments, and living costs coverage.",
             side: "left",
             align: "start",
           },
@@ -140,8 +138,8 @@ const executeSettingsTour = () => {
           element: "#config-land",
           popover: {
             title: "Land",
-            description:
-              "Define the amount of land available for cultivation. More land allows for planting more crops.",
+            description: 
+              "Define available land as a cellular grid within the AgroEcosystem, where each cell represents a farm plot. Multiple environmental data layers affect crop growth on this land.",
             side: "right",
             align: "start",
           },
@@ -150,8 +148,8 @@ const executeSettingsTour = () => {
           element: "#config-personality",
           popover: {
             title: "Personality",
-            description:
-              "Define personality traits for each agent. This affects their decision-making and interactions.",
+            description: 
+              "Set personality traits through four affinity parameters that influence goal selection and cooperative behavior: social affinity, family affinity, leisure affinity, and friends affinity.",
             side: "left",
             align: "start",
           },
@@ -160,8 +158,8 @@ const executeSettingsTour = () => {
           element: "#config-tools",
           popover: {
             title: "Tools",
-            description:
-              "Define the amount of agricultural tools available. More tools allow for faster and more efficient farming.",
+            description: 
+              "Specify the number of agricultural tools available to agents. Tools are consumed during land preparation, planting, and crop maintenance tasks.",
             side: "left",
             align: "start",
           },
@@ -170,8 +168,8 @@ const executeSettingsTour = () => {
           element: "#config-seeds",
           popover: {
             title: "Seeds",
-            description:
-              "Define the amount of seeds available for planting. More seeds allow for planting more crops.",
+            description: 
+              "Set the count of seed packets in inventory. Seeds are required for sowing operations within the AgroEcosystem.",
             side: "left",
             align: "start",
           },
@@ -180,8 +178,8 @@ const executeSettingsTour = () => {
           element: "#config-water",
           popover: {
             title: "Water",
-            description:
-              "Define the amount of water available for irrigation. More water allows for better crop growth.",
+            description: 
+              "Define available water for irrigation in liters. The model includes a water-stress component requiring minimum soil-moisture threshold of 30% to prevent crop damage.",
             side: "left",
             align: "start",
           },
@@ -190,8 +188,8 @@ const executeSettingsTour = () => {
           element: "#config-irrigation",
           popover: {
             title: "Irrigation",
-            description:
-              "Define the level of irrigation available. Better irrigation allows for more efficient water usage.",
+            description: 
+              "Configure the irrigation mechanism that delivers water to plots, relieving water stress and supporting plant growth. This consumes from the available water supply.",
             side: "left",
             align: "start",
           },
@@ -200,8 +198,8 @@ const executeSettingsTour = () => {
           element: "#config-emotions",
           popover: {
             title: "Emotions",
-            description:
-              "Define the emotional state of each agent. This affects their decision-making and interactions.",
+            description: 
+              "Enable emotional modeling across three axes: Happiness-Sadness, Security-Insecurity, and Hope-Uncertainty. Events like successful sales or price setbacks adjust these values, affecting goal prioritization.",
             side: "left",
             align: "start",
           },
@@ -210,8 +208,8 @@ const executeSettingsTour = () => {
           element: "#config-years",
           popover: {
             title: "Years",
-            description:
-              "Define the number of years the simulation will run. More years allow for developing long-term strategies.",
+            description: 
+              "Set the total duration of the simulation in annual cycles, determining how long the model will iterate through farming, market, and environmental processes.",
             side: "left",
             align: "start",
           },
@@ -221,62 +219,64 @@ const executeSettingsTour = () => {
 
     try {
       driverObj.drive();
-      console.log("Tour iniciado correctamente");
+      console.log("Tour started successfully");
     } catch (error) {
-      console.error("Error al iniciar el tour:", error);
+      console.error("Error starting tour:", error);
     }
   };
 
-  // Iniciar el proceso de verificación
+  // Start the verification process
   tryStartTour();
 };
 
-// Función para verificar el estado del tour de configuración en la sesión actual
+// Function to check the status of the settings tour in the current session
 export const shouldShowSettingsTourThisSession = () => {
   return !settingsTourShownThisSession && !isTourCompleted(TOUR_KEYS.SETTINGS);
 };
 
-// Nueva función para el tour de simulación con control de sesión
+// New function for simulation tour with session control
 export const startSimulationTour = (forceStart = false) => {
-  // Si se fuerza el inicio (botón manual), siempre mostrar
+  // If start is forced (manual button), always show
   if (forceStart) {
-    console.log("Tour de simulación iniciado manualmente");
+    console.log("Simulation tour started manually");
     executeSimulationTour();
     return;
   }
 
-  // Verificar si ya se mostró en esta sesión
+  // Check if already shown in this session
   if (simulationTourShownThisSession) {
-    console.log("Tour de simulación ya se mostró en esta sesión");
+    console.log("Simulation tour already shown in this session");
     return;
   }
 
-  // Verificar si el tour ya fue completado permanentemente
+  // Check if the tour was already completed permanently
   if (isTourCompleted(TOUR_KEYS.SIMULATION)) {
-    console.log("Tour de simulación ya fue completado anteriormente");
+    console.log("Simulation tour was previously completed");
     return;
   }
 
-  // Si llegamos aquí, es la primera vez en esta sesión y el tour no ha sido completado
-  console.log(
-    "Primera visita a simulation.tsx en esta sesión - iniciando tour"
-  );
+  // If we reach here, it's the first time in this session and tour hasn't been completed
+  console.log("First visit to simulation.tsx in this session - starting tour");
   simulationTourShownThisSession = true;
   executeSimulationTour();
 };
 
-// Función auxiliar para ejecutar el tour de simulación
+// Helper function to execute the simulation tour
 const executeSimulationTour = () => {
-  // Verificar que estamos en el proceso de renderizado de Electron
+  // Verify that we are in the Electron rendering process
   if (typeof window === "undefined") {
-    console.log("DOM no está listo o no estamos en el navegador");
+    console.log("DOM not ready or we are not in the browser");
     return;
   }
 
-  // Función para verificar si los elementos del DOM están listos
   const checkElementsReady = () => {
     const elements = [
       "sidebar",
+      "sidebar-home-page",
+      "sidebar-analytics",
+      "sidebar-settings", 
+      "sidebar-contact-us",
+      "sidebar-download",
       "farm-info",
       "simulation-map",
       "stop-button",
@@ -285,30 +285,80 @@ const executeSimulationTour = () => {
     return elements.every((id) => document.getElementById(id));
   };
 
-  // Intentar iniciar el tour cuando los elementos estén listos
+  // Try to start the tour when elements are ready
   const tryStartTour = () => {
     if (!checkElementsReady()) {
-      console.log("Esperando a que los elementos estén listos...");
+      console.log("Waiting for elements to be ready...");
       setTimeout(tryStartTour, 500);
       return;
     }
 
-    console.log("Elementos listos, iniciando tour de simulación...");
+    console.log("Elements ready, starting simulation tour...");
 
     const driverObj = driver({
       showProgress: true,
       onDestroyed: () => {
-        // Marcar el tour como completado cuando termine
+        // Mark the tour as completed when it ends
         markTourAsCompleted(TOUR_KEYS.SIMULATION);
-        console.log("Tour de simulación completado y guardado");
+        console.log("Simulation tour completed and saved");
       },
       steps: [
         {
           element: "#sidebar",
           popover: {
-            title: "Navigation Sidebar",
-            description:
-              "Access different sections of the application from this sidebar menu.",
+            title: "Navigation Panel",
+            description: 
+              "This sidebar provides access to all main sections of the application. Let's explore each option.",
+            side: "right",
+            align: "start",
+          },
+        },
+        {
+          element: "#sidebar-home-page",
+          popover: {
+            title: "Home Page",
+            description: 
+              "Access the main simulation view where you can monitor the agents' behavior and environmental conditions in real-time.",
+            side: "right",
+            align: "start",
+          },
+        },
+        {
+          element: "#sidebar-analytics",
+          popover: {
+            title: "Analytics Dashboard",
+            description: 
+              "Access comprehensive visualization tools for in-depth analysis of simulation data, including time series, correlations, and agent performance metrics.",
+            side: "right",
+            align: "start",
+          },
+        },
+        {
+          element: "#sidebar-settings",
+          popover: {
+            title: "Settings",
+            description: 
+              "Configure simulation parameters including agent properties, environmental conditions, and simulation duration.",
+            side: "right",
+            align: "start",
+          },
+        },
+        {
+          element: "#sidebar-contact-us",
+          popover: {
+            title: "Contact Support",
+            description: 
+              "Access contact information for technical support or feedback on the simulation platform.",
+            side: "right",
+            align: "start",
+          },
+        },
+        {
+          element: "#sidebar-download",
+          popover: {
+            title: "Data Export",
+            description: 
+              "Export complete simulation datasets in CSV format for further analysis in external tools. All metrics and agent states are available for comprehensive external processing and analysis.",
             side: "right",
             align: "start",
           },
@@ -317,10 +367,10 @@ const executeSimulationTour = () => {
           element: "#farm-info",
           popover: {
             title: "Farm Information",
-            description:
-              "View detailed information about the farm and its current status.",
-            side: "right",
-            align: "start",
+            description: 
+              "View detailed information about the farms, including resource levels, agent states, and production data.",
+            side: "left",
+            align: "center",
           },
         },
         {
@@ -328,7 +378,7 @@ const executeSimulationTour = () => {
           popover: {
             title: "Simulation Map",
             description:
-              "Visual representation of the farm simulation showing the land, crops, and agents.",
+              "Visual representation of the farm simulation showing the land, crops, and agents. The map updates in real-time to reflect changes in the environment and agent activities.",
             side: "left",
             align: "start",
           },
@@ -338,7 +388,7 @@ const executeSimulationTour = () => {
           popover: {
             title: "Stop Simulation",
             description:
-              "Click this button to stop the current simulation and the Java process running it.",
+              "Click this button to stop the current simulation and the underlying computational processes. You can restart a new simulation with different parameters after stopping.",
             side: "top",
             align: "center",
           },
@@ -348,7 +398,7 @@ const executeSimulationTour = () => {
           popover: {
             title: "Data Visualization",
             description:
-              "View charts and data about the simulation progress and results.",
+              "View interactive charts and real-time data visualizations about the simulation progress and results. These visualizations help you understand agent behaviors and system dynamics.",
             side: "top",
             align: "center",
           },
@@ -358,71 +408,94 @@ const executeSimulationTour = () => {
 
     try {
       driverObj.drive();
-      console.log("Tour de simulación iniciado correctamente");
+      console.log("Simulation tour started successfully");
     } catch (error) {
-      console.error("Error al iniciar el tour de simulación:", error);
+      console.error("Error starting simulation tour:", error);
     }
   };
 
-  // Iniciar el proceso de verificación
+  // Start the verification process
   tryStartTour();
 };
 
-// Función para verificar si es la primera vez que el usuario visita la simulación
+// Function to check if it's the first time the user visits the simulation
 export const isFirstTimeUser = () => {
   return !isTourCompleted(TOUR_KEYS.SIMULATION);
 };
 
-// Función para verificar el estado del tour en la sesión actual
+// Function to check the status of the tour in the current session
 export const shouldShowTourThisSession = () => {
   return (
     !simulationTourShownThisSession && !isTourCompleted(TOUR_KEYS.SIMULATION)
   );
 };
 
+// Navigation tour function
 export const startNavigationTour = () => {
- const checkElementsReady = () => {
-  const elements = ["nav-home", "nav-statistics", "nav-agents"];
-  return elements.every((id) => document.getElementById(id));
-};
+  const checkElementsReady = () => {
+    const elements = [
+      "sidebar-home-page",
+      "sidebar-analytics",
+      "sidebar-settings",
+      "sidebar-contact-us",
+      "sidebar-download"
+    ];
+    return elements.every((id) => document.getElementById(id));
+  };
 
   const tryStartTour = () => {
     if (!checkElementsReady()) {
-      console.log(
-        "Esperando a que los elementos de navegación estén listos..."
-      );
+      console.log("Waiting for navigation elements to be ready...");
       setTimeout(tryStartTour, 500);
       return;
     }
 
-    console.log("Elementos de navegación listos, iniciando tour...");
+    console.log("Navigation elements ready, starting tour...");
 
     const driverObj = driver({
       showProgress: true,
       steps: [
         {
-          element: "#nav-home",
+          element: "#sidebar-home-page",
           popover: {
-            title: "Dashboard",
-            description: "Access the simulation overview and key metrics.",
+            title: "Home Page",
+            description: "Access the main simulation view where you can monitor the agents' behavior and environmental conditions in real-time.",
             side: "right",
             align: "start",
           },
         },
         {
-          element: "#nav-statistics",
+          element: "#sidebar-analytics",
           popover: {
-            title: "Statistics",
-            description: "Explore advanced statistical analysis.",
+            title: "Analytics Dashboard",
+            description: "Access comprehensive visualization tools for in-depth analysis of simulation data, including time series, correlations, and agent performance metrics.",
             side: "right",
             align: "start",
           },
         },
         {
-          element: "#nav-agents",
+          element: "#sidebar-settings",
           popover: {
-            title: "Agents",
-            description: "Monitor the current status of agents.",
+            title: "Settings",
+            description: "Configure simulation parameters including agent properties, environmental conditions, and simulation duration.",
+            side: "right",
+            align: "start",
+          },
+        },
+        {
+          element: "#sidebar-contact-us",
+          popover: {
+            title: "Contact Support",
+            description: "Access contact information for technical support or feedback on the simulation platform.",
+            side: "right",
+            align: "start",
+          },
+        },
+        {
+          element: "#sidebar-download",
+          popover: {
+            title: "Data Export",
+            description: "Export complete simulation datasets in CSV format for further analysis in external tools. All metrics and agent states are available for comprehensive external processing and analysis.",
             side: "right",
             align: "start",
           },
@@ -432,9 +505,9 @@ export const startNavigationTour = () => {
 
     try {
       driverObj.drive();
-      console.log("Tour de navegación iniciado correctamente");
+      console.log("Navigation tour started successfully");
     } catch (error) {
-      console.error("Error al iniciar el tour de navegación:", error);
+      console.error("Error starting navigation tour:", error);
     }
   };
 
